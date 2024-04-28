@@ -1,5 +1,5 @@
 import unittest
-from mri_loader import MRIDataset  # Assuming your loader class is in mri_loader.py
+from dataset import MRIDataset  # Assuming your loader class is in mri_loader.py
 import os
 
 class TestMRIDataset(unittest.TestCase):
