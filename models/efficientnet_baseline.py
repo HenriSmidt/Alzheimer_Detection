@@ -5,7 +5,7 @@ from pytorch_lightning import LightningModule, Trainer
 from torch.utils.data import DataLoader
 from torch.optim import Adam
 
-class AlzheimerEfficientNet(LightningModule):
+class EfficientNetBaseline(LightningModule):
     def __init__(self, num_classes=4, lr=1e-3):
         super().__init__()
         # Load a pre-trained EfficientNet
@@ -57,6 +57,6 @@ class AlzheimerEfficientNet(LightningModule):
 
 # Example use case:
 # dataset and dataloader setup must be done according to your actual setup
-# model = AlzheimerEfficientNet()
+# model = EfficientNetBaseline()
 # trainer = Trainer(max_epochs=10)
 # trainer.fit(model, train_dataloader, val_dataloader)
