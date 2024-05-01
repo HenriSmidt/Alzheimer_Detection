@@ -13,13 +13,15 @@ class MRIDataset(Dataset):
             transforms.Resize((224, 224)),  # Resize to a common size
             transforms.ToTensor()           # Convert image to tensor
         ])
+        self.class_to_index = {'Non Demented': 0, 'Very mild Dementia': 1, 'Mild Dementia': 2, 'Moderate Dementia': 3}
+
 
     def __len__(self):
         return len(self.data)
 
     def __getitem__(self, idx):
         sample = self.data.iloc[idx]
-        class_label = sample['class']
+        class_label = self.class_to_index[sample['class']]
         
         images = []
         for path in sample['paths']:
