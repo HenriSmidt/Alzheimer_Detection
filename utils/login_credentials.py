@@ -2,7 +2,7 @@
 This module provides an login class that bundles all authentification methods
 
 Requirements:
-- Dotenv
+- python-dotenv
 """
 
 import os
