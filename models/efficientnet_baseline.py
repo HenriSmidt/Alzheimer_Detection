@@ -1,7 +1,7 @@
 import torch
 from torch import nn
 from efficientnet_pytorch import EfficientNet
-from pytorch_lightning import LightningModule, Trainer
+from lightning.pytorch import LightningModule, Trainer
 from torch.utils.data import DataLoader
 from torch.optim import Adam
 

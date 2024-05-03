@@ -3,7 +3,7 @@ from PIL import Image
 from torchvision import transforms
 from torch.utils.data import Dataset, DataLoader
 import pandas as pd
-import pytorch_lightning as pl
+import lightning.pytorch as pl
 from sklearn.model_selection import train_test_split
 
 class MRIDataset(Dataset):
