@@ -1,2 +1,2 @@
-from .efficientnet_baseline import EfficientNetBaseline
-__all__ = (EfficientNetBaseline)
+from .efficientnet_baseline import MRIEfficientNetBaseline
+__all__ = (MRIEfficientNetBaseline)
