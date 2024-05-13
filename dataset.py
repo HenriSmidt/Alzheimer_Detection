@@ -25,21 +25,29 @@ class PreprocessDataset(Dataset):
         return image
     
 
+import pandas as pd
+from torch.utils.data import DataLoader, Dataset
+from torchvision import transforms
+from PIL import Image
+import numpy as np
+from sklearn.model_selection import train_test_split
+import pytorch_lightning as pl
+import random
 
 class MRIDataset(Dataset):
     def __init__(self, dataframe, slice_number, transform=None):
-        self.df = dataframe
+        self.df = dataframe.set_index(['ID', 'slice_number'])
         self.slice_number = slice_number
         self.transform = transform
 
     def __len__(self):
-        return len(self.df)
+        return len(self.df.index.unique())
 
     def __getitem__(self, idx):
-        row = self.df.iloc[idx]
+        id, slice_num = self.df.index.unique()[idx]
         images = []
         for offset in (-1, 0, 1):
-            slice_path = self.get_path_for_slice(row['ID'], self.slice_number + offset, row['path'])
+            slice_path = self.get_random_path(id, slice_num + offset)
             image = Image.open(slice_path).convert('L')
             if self.transform:
                 image = self.transform(image)
@@ -49,15 +57,19 @@ class MRIDataset(Dataset):
         image_stack = np.stack(images, axis=-1)
         return image_stack
 
-    def get_path_for_slice(self, id, slice_num, original_path):
+    def get_random_path(self, id, slice_num):
         try:
-            row = self.df[(self.df['ID'] == id) & (self.df['slice_number'] == slice_num)]
-            if not row.empty:
-                return row.iloc[0]['path']
+            rows = self.df.loc[(id, slice_num)]
+            if not rows.empty:
+                # Randomly select between masked and unmasked if available
+                row = rows.sample(n=1)
+                return row['path'].values[0]
             else:
-                return original_path  # Fallback to the original slice if adjacent not found
-        except:
-            return original_path  # Fallback in case of any error
+                # If the specific slice_num doesn't exist, default to the original slice
+                return self.df.loc[(id, self.slice_number)].sample(n=1)['path'].values[0]
+        except KeyError:
+            # In case the slice is completely unavailable, use the fallback slice
+            return self.df.loc[(id, self.slice_number)].sample(n=1)['path'].values[0]
 
 class MRIImageDataModule(pl.LightningDataModule):
     def __init__(self, data_path, batch_size=32, slice_number=63):
