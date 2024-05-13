@@ -1,2 +1,3 @@
 from .efficientnet_baseline import MRIEfficientNetBaseline
-__all__ = (MRIEfficientNetBaseline)
+from .mobilevit_lightning import MobileViTLightning
+__all__ = (MRIEfficientNetBaseline, MobileViTLightning)
