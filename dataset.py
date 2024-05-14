@@ -72,7 +72,7 @@ class MRIDataset(Dataset):
             return self.df.loc[(id, self.slice_number)].sample(n=1)['path'].values[0]
 
 class MRIImageDataModule(pl.LightningDataModule):
-    def __init__(self, data_path, batch_size=32, slice_number=63):
+    def __init__(self, data_path, batch_size=32, slice_number=87):
         super().__init__()
         self.data_path = data_path
         self.batch_size = batch_size
