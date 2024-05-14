@@ -5,40 +5,16 @@ from torch.utils.data import Dataset, DataLoader
 import pandas as pd
 import lightning.pytorch as pl
 from sklearn.model_selection import train_test_split
-from torchvision.io import read_image
-from PIL import Image
 import numpy as np
-import pytorch_lightning as pl
-
-    
-class PreprocessDataset(Dataset):
-    def __init__(self, paths):
-        self.paths = paths
-    
-    def __len__(self):
-        return len(self.paths)
-    
-    def __getitem__(self, idx):
-        path = self.paths[idx]
-        image = read_image(path)  # Load image as a tensor
-        image = transforms.Grayscale()(image) / 255.0  # Convert to grayscale and normalize
-        return image
-    
-
-import pandas as pd
-from torch.utils.data import DataLoader, Dataset
-from torchvision import transforms
-from PIL import Image
-import numpy as np
-from sklearn.model_selection import train_test_split
-import pytorch_lightning as pl
 import random
+
 
 class MRIDataset(Dataset):
     def __init__(self, dataframe, slice_number, transform=None):
         self.df = dataframe.set_index(['ID', 'slice_number'])
         self.slice_number = slice_number
         self.transform = transform
+        self.resize = transforms.Resize((224, 224))  # Ensure images are resized to 224x224 # TODO: better to have an assert to save time, since data should be this size already?
 
     def __len__(self):
         return len(self.df.index.unique())
@@ -49,14 +25,111 @@ class MRIDataset(Dataset):
         for offset in (-1, 0, 1):
             slice_path = self.get_random_path(id, slice_num + offset)
             image = Image.open(slice_path).convert('L')
-            if self.transform:
-                image = self.transform(image)
-            images.append(np.array(image))
+            image = np.array(image)
+            images.append(image)
         
         # Stack to create a 3-channel image
-        image_stack = np.stack(images, axis=-1)
+        image_stack = np.stack(images, axis=-1)  # Shape will be (H, W, C)
+        image_stack = torch.tensor(image_stack).permute(2, 0, 1)  # Convert to (C, H, W) tensor
+        
+        # Normalize the image stack to [0, 1]
+        image_stack = image_stack.float() / 255.0 # TODO: check if images were already normalized and resized to 224 by 224
+        
+        if self.transform:
+            image_stack = self.transform(image_stack)
+            
         return image_stack
 
+    def get_random_path(self, id, slice_num):
+        try:
+            rows = self.df.loc[(id, slice_num)]
+            if not rows.empty:
+                # Randomly select between masked and unmasked if available
+                row = rows.sample(n=1)
+                return row['path'].values[0]
+            else:
+                # If the specific slice_num doesn't exist, default to the original slice
+                return self.df.loc[(id, self.slice_number)].sample(n=1)['path'].values[0]
+        except KeyError:
+               print(f"KeyError: The slice number {slice_num} or id {id} does not exist in the Data.")
+        return None
+
+class MRIImageDataModule(pl.LightningDataModule):
+    def __init__(self, data_path, batch_size=32, slice_number=87):
+        super().__init__()
+        self.data_path = data_path
+        self.batch_size = batch_size
+        self.slice_number = slice_number
+
+    def setup(self, stage=None):
+        data = pd.read_csv(self.data_path)
+        train_ids, test_ids = train_test_split(data['ID'].unique(), test_size=0.2, random_state=42)
+
+        train_df = data[data['ID'].isin(train_ids)]
+        test_df = data[data['ID'].isin(test_ids)]
+
+        self.train_dataset = MRIDataset(train_df, self.slice_number)
+        self.test_dataset = MRIDataset(test_df, self.slice_number)
+
+    def train_dataloader(self):
+        return DataLoader(self.train_dataset, batch_size=self.batch_size, shuffle=True)
+
+    def val_dataloader(self):
+        return DataLoader(self.test_dataset, batch_size=self.batch_size, shuffle=False)
+
+
+# Usage
+# data_module = MRIImageDataModule(data_path='Data/metadata_for_preprocessed_files.csv', slice_number=63)
+# data_module.setup()
+# train_loader = data_module.train_dataloader()
+# for batch in train_loader:
+#     # Each batch should have the dimensions [batch_size, channels, height, width]
+#     print(batch.shape)  # Should output torch.Size([batch_size, 3, 224, 224])
+#     break
+
+
+import torch
+from PIL import Image
+from torchvision import transforms
+from torch.utils.data import Dataset, DataLoader
+import pandas as pd
+import pytorch_lightning as pl
+from sklearn.model_selection import train_test_split
+
+class MRIDataset(Dataset):
+    def __init__(self, dataframe, slice_number, transform=None):
+        self.slice_number = slice_number
+        self.transform = transform
+        self.df = dataframe
+        self.valid_ids = dataframe[dataframe['slice_number'] == slice_number]['ID'].unique()
+        self.df = self.df[self.df['ID'].isin(self.valid_ids)].set_index(['ID', 'slice_number'])
+
+    def __len__(self):
+        return len(self.valid_ids)
+
+    def __getitem__(self, idx):
+        id = self.valid_ids[idx]
+        images = []
+        
+        for offset in (-1, 0, 1):
+            slice_path = self.get_random_path(id, self.slice_number + offset)
+            image = Image.open(slice_path).convert('L')
+            image = self.resize(image)  # Resize the image
+            image = np.array(image)
+            images.append(image)
+        
+        # Stack to create a 3-channel image
+        image_stack = np.stack(images, axis=-1)  # Shape will be (H, W, C)
+        image_stack = torch.tensor(image_stack).permute(2, 0, 1)  # Convert to (C, H, W) tensor
+        
+        # Normalize the image stack to [0, 1]
+        image_stack = image_stack.float() / 255.0
+        
+        if self.transform:
+            image_stack = self.transform(image_stack)
+            
+        return image_stack
+    
     def get_random_path(self, id, slice_num):
         try:
             rows = self.df.loc[(id, slice_num)]
@@ -71,26 +144,36 @@ class MRIDataset(Dataset):
             # In case the slice is completely unavailable, use the fallback slice
             return self.df.loc[(id, self.slice_number)].sample(n=1)['path'].values[0]
 
+    def get_image(self, id, slice_num):
+        try:
+            path = self.df.loc[(id, slice_num), 'path']
+            image = Image.open(path).convert('L')
+        except KeyError:
+            # If slice does not exist, use the main slice_number as fallback
+            path = self.df.loc[(id, self.slice_number), 'path']
+            image = Image.open(path).convert('L')
+        return image
+
 class MRIImageDataModule(pl.LightningDataModule):
     def __init__(self, data_path, batch_size=32, slice_number=87):
         super().__init__()
         self.data_path = data_path
         self.batch_size = batch_size
         self.slice_number = slice_number
-        self.transform = transforms.Compose([
-            transforms.ToTensor(),
-            transforms.Normalize(mean=[0.5], std=[0.5])
-        ])
 
     def setup(self, stage=None):
         data = pd.read_csv(self.data_path)
+        
+        # Filter to only include IDs with the specified slice_number
+        data = data[data['slice_number'].isin([self.slice_number - 1, self.slice_number, self.slice_number + 1])]
+
         train_ids, test_ids = train_test_split(data['ID'].unique(), test_size=0.2, random_state=42)
 
         train_df = data[data['ID'].isin(train_ids)]
         test_df = data[data['ID'].isin(test_ids)]
 
-        self.train_dataset = MRIDataset(train_df, self.slice_number, transform=self.transform)
-        self.test_dataset = MRIDataset(test_df, self.slice_number, transform=self.transform)
+        self.train_dataset = MRIDataset(train_df, self.slice_number)
+        self.test_dataset = MRIDataset(test_df, self.slice_number)
 
     def train_dataloader(self):
         return DataLoader(self.train_dataset, batch_size=self.batch_size, shuffle=True)
@@ -98,7 +181,9 @@ class MRIImageDataModule(pl.LightningDataModule):
     def val_dataloader(self):
         return DataLoader(self.test_dataset, batch_size=self.batch_size, shuffle=False)
 
-# Usage
-data_module = MRIImageDataModule(data_path='Data/metadata_for_preprocessed_files.csv', slice_number=63)
-data_module.setup()
-
+# Usage example
+# data_module = MRIImageDataModule(data_path='Data/metadata_for_preprocessed_files.csv', slice_number=63)
+# data_module.setup()
+# train_loader = data_module.train_dataloader()
+# for batch in train_loader:
+#     print(batch.shape)  # Should output torch.Size([batch_size, 3, 224, 224])
