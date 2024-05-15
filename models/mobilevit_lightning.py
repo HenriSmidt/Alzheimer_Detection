@@ -1,5 +1,6 @@
 import pytorch_lightning as pl
 from transformers import MobileViTFeatureExtractor, MobileViTForImageClassification
+import torch
 
 class MobileViTLightning(pl.LightningModule):
     def __init__(self):

@@ -1,11 +1,9 @@
 import unittest
 import pandas as pd
 from torchvision import transforms
-from PIL import Image
-import pytorch_lightning as pl
-from torch.utils.data import DataLoader
 import sys
 import os
+import torch
 
 # Add the parent directory to sys.path to import dataset
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -30,7 +28,9 @@ class TestMRIDataset(unittest.TestCase):
                 'Data/OASIS_Extracted/OAS1_0003/OAS1_0003_MR1_mpr_n4_anon_111_t88_gfc_slice_63.jpeg'
             ],
             'CDR': [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-            'is_masked': [True, False, True, False, True, False]
+            'is_masked': [True, False, True, False, True, False],
+            'Age': [44, 55, 66, 77, 88, 99]
+
         }
         df = pd.DataFrame(data)
         df.to_csv(self.temp_csv_path, index=False)
@@ -50,9 +50,11 @@ class TestMRIDataset(unittest.TestCase):
         module.setup()
         train_loader = module.train_dataloader()
         data_iter = iter(train_loader)
-        image = next(data_iter)
+        image, label, age = next(data_iter)
         # Assuming image size and check shape (batch size, channels, height, width)
         self.assertEqual(image.shape, (1, 3, 224, 224))  # Modify according to your image size
-
+        self.assertIsInstance(label, torch.Tensor)
+        self.assertIsInstance(age, torch.Tensor)
+        
 if __name__ == '__main__':
     unittest.main()
