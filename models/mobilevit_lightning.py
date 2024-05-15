@@ -1,8 +1,8 @@
-import pytorch_lightning as pl
+from lightning.pytorch import LightningModule
 from transformers import MobileViTFeatureExtractor, MobileViTForImageClassification
 import torch
 
-class MobileViTLightning(pl.LightningModule):
+class MobileViTLightning(LightningModule):
     def __init__(self):
         super().__init__()
         self.model = MobileViTForImageClassification.from_pretrained("apple/mobilevit-x-small")
@@ -13,7 +13,7 @@ class MobileViTLightning(pl.LightningModule):
         return outputs.logits
     
     def training_step(self, batch, batch_idx):
-        images, labels = batch
+        images, labels, age = batch
         inputs = self.feature_extractor(images=images, return_tensors="pt")
         logits = self.forward(inputs)
         loss = self.loss(logits, labels)

@@ -5,6 +5,7 @@ import pandas as pd
 import pytorch_lightning as pl
 from sklearn.model_selection import train_test_split
 import numpy as np
+from utils import get_best_device
 
 class MRIDataset(Dataset):
     def __init__(self, dataframe, slice_number, transform=None):
@@ -13,6 +14,7 @@ class MRIDataset(Dataset):
         self.df = dataframe
         self.valid_ids = dataframe[dataframe['slice_number'] == slice_number]['ID'].unique()
         self.df = self.df[self.df['ID'].isin(self.valid_ids)].set_index(['ID', 'slice_number'])
+        self.device = get_best_device()
 
     def __len__(self):
         return len(self.valid_ids)
@@ -33,12 +35,16 @@ class MRIDataset(Dataset):
         
         # Normalize the image stack to [0, 1]
         image_stack = image_stack.float() / 255.0 #TODO: check if images are already normalized and sized to 224 224
+        image_stack = image_stack.to(torch.device("mps"))
         
         if self.transform:
             image_stack = self.transform(image_stack)
             
         label = torch.tensor(self.df.loc[(id, self.slice_number)]['CDR']).float()
         age = torch.tensor(self.df.loc[(id, self.slice_number)]['Age']).float()
+        
+        label = label.to(torch.device("mps"))
+
             
         return image_stack, label, age
 
