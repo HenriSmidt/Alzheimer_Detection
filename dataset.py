@@ -9,73 +9,73 @@ import numpy as np
 import random
 
 
-class MRIDataset(Dataset):
-    def __init__(self, dataframe, slice_number, transform=None):
-        self.df = dataframe.set_index(['ID', 'slice_number'])
-        self.slice_number = slice_number
-        self.transform = transform
-        self.resize = transforms.Resize((224, 224))  # Ensure images are resized to 224x224 # TODO: better to have an assert to save time, since data should be this size already?
+# class MRIDataset(Dataset):
+#     def __init__(self, dataframe, slice_number, transform=None):
+#         self.df = dataframe.set_index(['ID', 'slice_number'])
+#         self.slice_number = slice_number
+#         self.transform = transform
+#         self.resize = transforms.Resize((224, 224))  # Ensure images are resized to 224x224 # TODO: better to have an assert to save time, since data should be this size already?
 
-    def __len__(self):
-        return len(self.df.index.unique())
+#     def __len__(self):
+#         return len(self.df.index.unique())
 
-    def __getitem__(self, idx):
-        id, slice_num = self.df.index.unique()[idx]
-        images = []
-        for offset in (-1, 0, 1):
-            slice_path = self.get_random_path(id, slice_num + offset)
-            image = Image.open(slice_path).convert('L')
-            image = np.array(image)
-            images.append(image)
+#     def __getitem__(self, idx):
+#         id, slice_num = self.df.index.unique()[idx]
+#         images = []
+#         for offset in (-1, 0, 1):
+#             slice_path = self.get_random_path(id, slice_num + offset)
+#             image = Image.open(slice_path).convert('L')
+#             image = np.array(image)
+#             images.append(image)
         
-        # Stack to create a 3-channel image
-        image_stack = np.stack(images, axis=-1)  # Shape will be (H, W, C)
-        image_stack = torch.tensor(image_stack).permute(2, 0, 1)  # Convert to (C, H, W) tensor
+#         # Stack to create a 3-channel image
+#         image_stack = np.stack(images, axis=-1)  # Shape will be (H, W, C)
+#         image_stack = torch.tensor(image_stack).permute(2, 0, 1)  # Convert to (C, H, W) tensor
         
-        # Normalize the image stack to [0, 1]
-        image_stack = image_stack.float() / 255.0 # TODO: check if images were already normalized and resized to 224 by 224
+#         # Normalize the image stack to [0, 1]
+#         image_stack = image_stack.float() / 255.0 # TODO: check if images were already normalized and resized to 224 by 224
         
-        if self.transform:
-            image_stack = self.transform(image_stack)
+#         if self.transform:
+#             image_stack = self.transform(image_stack)
             
-        return image_stack
+#         return image_stack
 
-    def get_random_path(self, id, slice_num):
-        try:
-            rows = self.df.loc[(id, slice_num)]
-            if not rows.empty:
-                # Randomly select between masked and unmasked if available
-                row = rows.sample(n=1)
-                return row['path'].values[0]
-            else:
-                # If the specific slice_num doesn't exist, default to the original slice
-                return self.df.loc[(id, self.slice_number)].sample(n=1)['path'].values[0]
-        except KeyError:
-               print(f"KeyError: The slice number {slice_num} or id {id} does not exist in the Data.")
-        return None
+#     def get_random_path(self, id, slice_num):
+#         try:
+#             rows = self.df.loc[(id, slice_num)]
+#             if not rows.empty:
+#                 # Randomly select between masked and unmasked if available
+#                 row = rows.sample(n=1)
+#                 return row['path'].values[0]
+#             else:
+#                 # If the specific slice_num doesn't exist, default to the original slice
+#                 return self.df.loc[(id, self.slice_number)].sample(n=1)['path'].values[0]
+#         except KeyError:
+#                print(f"KeyError: The slice number {slice_num} or id {id} does not exist in the Data.")
+#         return None
 
-class MRIImageDataModule(pl.LightningDataModule):
-    def __init__(self, data_path, batch_size=32, slice_number=87):
-        super().__init__()
-        self.data_path = data_path
-        self.batch_size = batch_size
-        self.slice_number = slice_number
+# class MRIImageDataModule(pl.LightningDataModule):
+#     def __init__(self, data_path, batch_size=32, slice_number=87):
+#         super().__init__()
+#         self.data_path = data_path
+#         self.batch_size = batch_size
+#         self.slice_number = slice_number
 
-    def setup(self, stage=None):
-        data = pd.read_csv(self.data_path)
-        train_ids, test_ids = train_test_split(data['ID'].unique(), test_size=0.2, random_state=42)
+#     def setup(self, stage=None):
+#         data = pd.read_csv(self.data_path)
+#         train_ids, test_ids = train_test_split(data['ID'].unique(), test_size=0.2, random_state=42)
 
-        train_df = data[data['ID'].isin(train_ids)]
-        test_df = data[data['ID'].isin(test_ids)]
+#         train_df = data[data['ID'].isin(train_ids)]
+#         test_df = data[data['ID'].isin(test_ids)]
 
-        self.train_dataset = MRIDataset(train_df, self.slice_number)
-        self.test_dataset = MRIDataset(test_df, self.slice_number)
+#         self.train_dataset = MRIDataset(train_df, self.slice_number)
+#         self.test_dataset = MRIDataset(test_df, self.slice_number)
 
-    def train_dataloader(self):
-        return DataLoader(self.train_dataset, batch_size=self.batch_size, shuffle=True)
+#     def train_dataloader(self):
+#         return DataLoader(self.train_dataset, batch_size=self.batch_size, shuffle=True)
 
-    def val_dataloader(self):
-        return DataLoader(self.test_dataset, batch_size=self.batch_size, shuffle=False)
+#     def val_dataloader(self):
+#         return DataLoader(self.test_dataset, batch_size=self.batch_size, shuffle=False)
 
 
 # Usage
@@ -95,6 +95,7 @@ from torch.utils.data import Dataset, DataLoader
 import pandas as pd
 import pytorch_lightning as pl
 from sklearn.model_selection import train_test_split
+import numpy as np
 
 class MRIDataset(Dataset):
     def __init__(self, dataframe, slice_number, transform=None):
@@ -114,7 +115,6 @@ class MRIDataset(Dataset):
         for offset in (-1, 0, 1):
             slice_path = self.get_random_path(id, self.slice_number + offset)
             image = Image.open(slice_path).convert('L')
-            image = self.resize(image)  # Resize the image
             image = np.array(image)
             images.append(image)
         
@@ -123,36 +123,50 @@ class MRIDataset(Dataset):
         image_stack = torch.tensor(image_stack).permute(2, 0, 1)  # Convert to (C, H, W) tensor
         
         # Normalize the image stack to [0, 1]
-        image_stack = image_stack.float() / 255.0
+        image_stack = image_stack.float() / 255.0 #TODO: check if images are already normalized and sized to 224 224
         
         if self.transform:
             image_stack = self.transform(image_stack)
             
         return image_stack
-    
+
     def get_random_path(self, id, slice_num):
         try:
             rows = self.df.loc[(id, slice_num)]
             if not rows.empty:
                 # Randomly select between masked and unmasked if available
-                row = rows.sample(n=1)
-                return row['path'].values[0]
+                if isinstance(rows, pd.DataFrame) and len(rows) > 1:
+                    row = rows.iloc[np.random.choice(len(rows))]
+                else:
+                    row = rows
+
+                sampled_path = row['path']
+                return sampled_path if isinstance(sampled_path, str) else sampled_path.values[0]
             else:
                 # If the specific slice_num doesn't exist, default to the original slice
-                return self.df.loc[(id, self.slice_number)].sample(n=1)['path'].values[0]
+                rows = self.df.loc[(id, self.slice_number)]
+                if isinstance(rows, pd.DataFrame) and len(rows) > 1:
+                    row = rows.iloc[np.random.choice(len(rows))]
+                else:
+                    row = rows
+
+                sampled_path = row['path']
+                return sampled_path if isinstance(sampled_path, str) else sampled_path.values[0]
         except KeyError:
             # In case the slice is completely unavailable, use the fallback slice
-            return self.df.loc[(id, self.slice_number)].sample(n=1)['path'].values[0]
+            try:
+                rows = self.df.loc[(id, self.slice_number)]
+                if isinstance(rows, pd.DataFrame) and len(rows) > 1:
+                    row = rows.iloc[np.random.choice(len(rows))]
+                else:
+                    row = rows
 
-    def get_image(self, id, slice_num):
-        try:
-            path = self.df.loc[(id, slice_num), 'path']
-            image = Image.open(path).convert('L')
-        except KeyError:
-            # If slice does not exist, use the main slice_number as fallback
-            path = self.df.loc[(id, self.slice_number), 'path']
-            image = Image.open(path).convert('L')
-        return image
+                sampled_path = row['path']
+                return sampled_path if isinstance(sampled_path, str) else sampled_path.values[0]
+            except KeyError:
+                print(f"KeyError: The slice number {self.slice_number} or id {id} does not exist in the Data.")
+        return None
+
 
 class MRIImageDataModule(pl.LightningDataModule):
     def __init__(self, data_path, batch_size=32, slice_number=87):

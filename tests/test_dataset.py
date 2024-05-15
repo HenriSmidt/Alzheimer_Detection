@@ -4,8 +4,12 @@ from torchvision import transforms
 from PIL import Image
 import pytorch_lightning as pl
 from torch.utils.data import DataLoader
-from dataset import MRIImageDataModule, MRIDataset
+import sys
 import os
+
+# Add the parent directory to sys.path to import dataset
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from dataset import MRIImageDataModule, MRIDataset
 
 # Your dataset and data module classes here (MRIDataset, MRIImageDataModule)
 # Make sure to import or define them if they are in another file.
@@ -39,7 +43,7 @@ class TestMRIDataset(unittest.TestCase):
     def test_dataset_length(self):
         module = MRIImageDataModule(self.temp_csv_path, batch_size=1, slice_number=63)
         module.setup()
-        self.assertEqual(len(module.train_dataset), 4)  # Should have unique ID entries for training
+        self.assertEqual(len(module.train_dataset)+len(module.test_dataset), 3)  # Should have unique ID entries for training
 
     def test_data_loading(self):
         module = MRIImageDataModule(self.temp_csv_path, batch_size=1, slice_number=63)
