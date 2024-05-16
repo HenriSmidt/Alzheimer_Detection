@@ -1,27 +1,21 @@
-from lightning.pytorch import LightningModule
-from transformers import MobileViTFeatureExtractor, MobileViTForImageClassification
+import lightning.pytorch as pl
+from transformers import MobileViTImageProcessor, MobileViTForImageClassification
 import torch
 
-class MobileViTLightning(LightningModule):
-    def __init__(self):
-        super().__init__()
-        self.model = MobileViTForImageClassification.from_pretrained("apple/mobilevit-x-small")
-        self.feature_extractor = MobileViTFeatureExtractor.from_pretrained("apple/mobilevit-x-small")
-    
-    def forward(self, x):
-        outputs = self.model(**x)
-        return outputs.logits
-    
-    def training_step(self, batch, batch_idx):
-        images, labels, age = batch
-        inputs = self.feature_extractor(images=images, return_tensors="pt")
-        logits = self.forward(inputs)
-        loss = self.loss(logits, labels)
-        return loss
-    
-    def configure_optimizers(self):
-        optimizer = torch.optim.Adam(self.parameters(), lr=1e-3)
-        return optimizer
+class MobileViTLightning(pl.LightningModule):
+    def __init__(self, model_ckpt, num_labels):
+        super(MobileViTLightning, self).__init__()
+        self.model = MobileViTForImageClassification.from_pretrained(model_ckpt, num_labels=num_labels, ignore_mismatched_sizes=True)
 
-    def loss(self, logits, labels):
-        return torch.nn.functional.cross_entropy(logits, labels)
+    def forward(self, x):
+        return self.model(x).logits
+
+    def training_step(self, batch, batch_idx):
+        inputs, labels = batch
+        outputs = self(inputs)
+        loss = torch.nn.functional.cross_entropy(outputs, labels)
+        self.log('train_loss', loss)
+        return loss
+
+    def configure_optimizers(self):
+        return torch.optim.AdamW(self.parameters(), lr=2e-5)
