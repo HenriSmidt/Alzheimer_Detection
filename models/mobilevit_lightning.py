@@ -11,7 +11,7 @@ class MobileViTLightning(pl.LightningModule):
         return self.model(x).logits
 
     def training_step(self, batch, batch_idx):
-        inputs, labels = batch
+        inputs, labels, _ = batch
         outputs = self(inputs)
         loss = torch.nn.functional.cross_entropy(outputs, labels)
         self.log('train_loss', loss)
