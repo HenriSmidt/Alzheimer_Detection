@@ -23,7 +23,7 @@ class MRIDataset(Dataset):
         self.transform = transform
         self.df = dataframe
         self.valid_ids = dataframe[dataframe['slice_number'] == slice_number]['ID'].unique()
-        self.df = self.df[self.df['ID'].isin(self.valid_ids)].set_index(['ID', 'slice_number'])
+        self.df = self.df[self.df['ID'].isin(self.valid_ids)].set_index(['ID', 'slice_number']).sort_index()
         self.device = get_best_device()
 
     def __len__(self):
@@ -44,7 +44,6 @@ class MRIDataset(Dataset):
         image_stack = torch.tensor(image_stack).permute(2, 0, 1)  # Convert to (C, H, W) tensor
         
         # Normalize the image stack to [0, 1]
-        image_stack = image_stack.float() / 255.0 #TODO: check if images are already normalized and sized to 224 224
         image_stack = image_stack.to(torch.device("mps"))
         
         if self.transform:
@@ -102,12 +101,13 @@ class MRIDataset(Dataset):
 
 
 class MRIImageDataModule(pl.LightningDataModule):
-    def __init__(self, data_path, transform=None, batch_size=32, slice_number=87):
+    def __init__(self, data_path, transform=None, batch_size=32, slice_number=87, num_workers=None):
         super().__init__()
         self.data_path = data_path
         self.batch_size = batch_size
         self.slice_number = slice_number
         self.transform = transform
+        self.num_workers = num_workers
 
     def setup(self, stage=None):
         data = pd.read_csv(self.data_path)
@@ -140,13 +140,13 @@ class MRIImageDataModule(pl.LightningDataModule):
         self.test_dataset = MRIDataset(test_df, self.slice_number, transform=self.transform)
 
     def train_dataloader(self):
-        return DataLoader(self.train_dataset, batch_size=self.batch_size, shuffle=True)
+        return DataLoader(self.train_dataset, batch_size=self.batch_size, shuffle=True, num_workers=self.num_workers)
 
     def val_dataloader(self):
-        return DataLoader(self.val_dataset, batch_size=self.batch_size, shuffle=False)
+        return DataLoader(self.val_dataset, batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers)
     
     def test_dataloader(self):
-        return DataLoader(self.test_dataset, batch_size=self.batch_size, shuffle=False)
+        return DataLoader(self.test_dataset, batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers)
 
 
 # Usage example

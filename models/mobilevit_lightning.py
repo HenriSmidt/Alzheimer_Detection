@@ -16,6 +16,13 @@ class MobileViTLightning(pl.LightningModule):
         loss = torch.nn.functional.cross_entropy(outputs, labels)
         self.log('train_loss', loss)
         return loss
-
+    
+    def validation_step(self, batch, batch_idx):
+        inputs, labels, _ = batch
+        outputs = self(inputs)
+        loss = torch.nn.functional.cross_entropy(outputs, labels)
+        self.log('val_loss', loss)
+        return loss
+    
     def configure_optimizers(self):
         return torch.optim.AdamW(self.parameters(), lr=2e-5)
