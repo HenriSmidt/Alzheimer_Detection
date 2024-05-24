@@ -18,13 +18,14 @@ def stratified_group_split(data, group_col, stratify_col, test_size=0.125, rando
 
 
 class MRIDataset(Dataset):
-    def __init__(self, dataframe, slice_number, transform=None):
+    def __init__(self, dataframe, slice_number, transform=None, return_id=False):
         self.slice_number = slice_number
         self.transform = transform
         self.df = dataframe
         self.valid_ids = dataframe[dataframe['slice_number'] == slice_number]['ID'].unique()
         self.df = self.df[self.df['ID'].isin(self.valid_ids)].set_index(['ID', 'slice_number']).sort_index()
         self.device = get_best_device()
+        self.return_id = return_id
 
     def __len__(self):
         return len(self.valid_ids)
@@ -59,8 +60,10 @@ class MRIDataset(Dataset):
         
         label = label.to(torch.device("mps"))
 
-            
-        return image_stack, label, age
+        if self.return_id:
+            return image_stack, label, age, id
+        else:    
+            return image_stack, label, age
 
     def get_random_path(self, id, slice_num):
         try:
@@ -137,7 +140,7 @@ class MRIImageDataModule(pl.LightningDataModule):
         # Assuming MRIDataset is a class that takes a DataFrame, slice number, and optional transform as arguments
         self.train_dataset = MRIDataset(train_df, self.slice_number, transform=self.transform)
         self.val_dataset = MRIDataset(val_df, self.slice_number, transform=self.transform)
-        self.test_dataset = MRIDataset(test_df, self.slice_number, transform=self.transform)
+        self.test_dataset = MRIDataset(test_df, self.slice_number, transform=self.transform, return_id=True)
 
     def train_dataloader(self):
         return DataLoader(self.train_dataset, batch_size=self.batch_size, shuffle=True, num_workers=self.num_workers)
