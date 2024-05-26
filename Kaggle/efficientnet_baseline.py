@@ -20,7 +20,7 @@ class MRIEfficientNetBaseline(LightningModule):
         return self.model(x)
 
     def training_step(self, batch, batch_idx):
-        images, labels = batch
+        images, labels, _, _ = batch
         # Flatten the batch dimension and the slice dimension
         images = images.view(-1, 3, 224, 224)  # Adjust dimensions for EfficientNet input
         labels = labels.repeat_interleave(images.size(0) // labels.size(0))
@@ -30,7 +30,7 @@ class MRIEfficientNetBaseline(LightningModule):
         return loss
 
     def validation_step(self, batch, batch_idx):
-        images, labels = batch
+        images, labels, _, _ = batch
         images = images.view(-1, 3, 224, 224)
         labels = labels.repeat_interleave(images.size(0) // labels.size(0))
         logits = self(images)
@@ -39,7 +39,7 @@ class MRIEfficientNetBaseline(LightningModule):
         return loss
 
     def test_step(self, batch, batch_idx):
-        images, labels = batch
+        images, labels, _, _ = batch
         images = images.view(-1, 3, 224, 224)
         labels = labels.repeat_interleave(images.size(0) // labels.size(0))
         logits = self(images)

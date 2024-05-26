@@ -20,19 +20,25 @@ class EfficientNetBaseline(LightningModule):
         return self.model(x)
 
     def training_step(self, batch, batch_idx):
-        images, labels = batch
+        images, labels, age = batch
         # # Flatten the batch dimension and the slice dimension
         # images = images.view(-1, 3, 224, 224)  # Adjust dimensions for EfficientNet input
         # labels = labels.repeat_interleave(images.size(0) // labels.size(0))
+        
+        images = images.float()
+
         logits = self(images)
         loss = self.criterion(logits, labels)
         self.log('train_loss', loss)
         return loss
 
     def validation_step(self, batch, batch_idx):
-        images, labels = batch
+        images, labels, age = batch
         # images = images.view(-1, 3, 224, 224)
         # labels = labels.repeat_interleave(images.size(0) // labels.size(0))
+        
+        images = images.float()
+
         logits = self(images)
         loss = self.criterion(logits, labels)
         self.log('val_loss', loss)
