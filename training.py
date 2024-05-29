@@ -21,26 +21,28 @@ from sklearn.metrics import f1_score
 authenticator = LoginCredentials()
 wandb.login(key=authenticator.wandb_key)
 
+
 def set_reproducibility(seed=42):
     # Set Python random seed
     random.seed(seed)
-    
+
     # Set Numpy seed
     np.random.seed(seed)
-    
+
     # Set PyTorch seed
     torch.manual_seed(seed)
-    
+
     # If using CUDA:
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(seed)
-    
+
     # Control sources of nondeterminism
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
-    
+
     # PyTorch Lightning utility to seed everything
     pl.seed_everything(seed, workers=True)
+
 
 # Example of setting up a reproducible environment
 set_reproducibility(42)
@@ -49,31 +51,37 @@ set_reproducibility(42)
 model_ckpt = "apple/mobilevit-x-small"
 processor = MobileViTImageProcessor.from_pretrained(model_ckpt)
 
+
 # Load and preprocess the CIFAR-10 dataset
 def transform(image):
     # Use MobileViTImageProcessor for preprocessing
     return processor(image, return_tensors="pt")["pixel_values"].squeeze(0)
 
-csv_path = 'Data/metadata_for_preprocessed_files.csv'
+
+csv_path = "Data/metadata_for_preprocessed_files.csv"
 
 # Define sweep configuration
 sweep_config = {
-    'method': 'grid',
-    'parameters': {
-        'slice_number': {
-            'values': list(range(20, 140, 3))  # Values: 20, 17, 14
-        }
-    }
+    "method": "grid",
+    "parameters": {
+        "slice_number": {"values": list(range(20, 140, 3))}  # Values: 20, 17, 14
+    },
 }
 
 sweep_id = wandb.sweep(sweep=sweep_config, project="Alzheimer-Detection")
+
 
 # Define the training function
 def train(config=None):
     with wandb.init(config=config):
         config = wandb.config
 
-        data_module = MRIImageDataModule(csv_path, slice_number=config.slice_number, transform=transform, batch_size=64)
+        data_module = MRIImageDataModule(
+            csv_path,
+            slice_number=config.slice_number,
+            transform=transform,
+            batch_size=64,
+        )
         data_module.setup()
         train_loader = data_module.train_dataloader()
         val_loader = data_module.val_dataloader()
@@ -84,22 +92,24 @@ def train(config=None):
         wandb_logger = WandbLogger()
 
         checkpoint_callback = ModelCheckpoint(
-            dirpath='model_checkpoints',
-            filename=f'slice_numer_{config.slice_number}',
-            monitor='val_loss',
-            mode='min',
-            save_top_k=1
+            dirpath="model_checkpoints",
+            filename=f"slice_numer_{config.slice_number}",
+            monitor="val_loss",
+            mode="min",
+            save_top_k=1,
         )
 
         trainer = L.Trainer(
             max_epochs=20,
-            devices='auto',
-            accelerator='auto',
+            devices="auto",
+            accelerator="auto",
             logger=wandb_logger,
-            callbacks=[checkpoint_callback]
+            callbacks=[checkpoint_callback],
         )
 
-        trainer.fit(model=model, train_dataloaders=train_loader, val_dataloaders=val_loader)
+        trainer.fit(
+            model=model, train_dataloaders=train_loader, val_dataloaders=val_loader
+        )
 
         # Load best model for testing
         # best_model_path = checkpoint_callback.best_model_path
@@ -118,6 +128,7 @@ def train(config=None):
 
         # f1 = f1_score(all_labels, all_preds, average='weighted')
         # wandb.log({'test_f1_score': f1})
+
 
 # Run the sweep
 wandb.agent(sweep_id, function=train)
