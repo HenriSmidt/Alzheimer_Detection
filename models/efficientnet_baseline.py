@@ -9,6 +9,7 @@ from torch.optim import Adam
 class EfficientNetBaseline(LightningModule):
     def __init__(self, model_name='efficientnet-b0', num_classes=4, lr=1e-3):
         super().__init__()
+        self.save_hyperparameters()  
         # Load a pre-trained EfficientNet
         self.model = EfficientNet.from_pretrained(model_name)
         # Replace the classifier layer with the correct number of outputs for our task
