@@ -7,10 +7,10 @@ from torch.optim import Adam
 
 
 class EfficientNetBaseline(LightningModule):
-    def __init__(self, num_classes=4, lr=1e-3):
+    def __init__(self, model_name='efficientnet-b0', num_classes=4, lr=1e-3):
         super().__init__()
         # Load a pre-trained EfficientNet
-        self.model = EfficientNet.from_pretrained("efficientnet-b0")
+        self.model = EfficientNet.from_pretrained(model_name)
         # Replace the classifier layer with the correct number of outputs for our task
         self.model._fc = nn.Linear(self.model._fc.in_features, num_classes)
         self.criterion = nn.CrossEntropyLoss()
