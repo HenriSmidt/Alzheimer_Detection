@@ -1,19 +1,14 @@
 import torch
 from torch import nn
 import lightning.pytorch as pl
-from .model_wrappers import ModelWrapper
 
 class SimpleEnsembleModel(pl.LightningModule):
-    def __init__(self, model_wrappers, num_classes):
+    def __init__(self, feature_size, num_classes):
         super(SimpleEnsembleModel, self).__init__()
-        self.models = nn.ModuleList(model_wrappers)
-        feature_size = sum([model.output_size for model in model_wrappers])
         self.fc = nn.Linear(feature_size, num_classes)
 
     def forward(self, x):
-        feature_maps = [model.extract_features(x) for model in self.models]
-        combined_features = torch.cat(feature_maps, dim=1)
-        logits = self.fc(combined_features)
+        logits = self.fc(x)
         return logits
 
     def training_step(self, batch, batch_idx):
@@ -34,18 +29,14 @@ class SimpleEnsembleModel(pl.LightningModule):
         return torch.optim.AdamW(self.parameters(), lr=2e-5)
 
 class AdvancedEnsembleModel(pl.LightningModule):
-    def __init__(self, model_wrappers, num_classes):
+    def __init__(self, feature_size, num_classes, num_heads=8):
         super(AdvancedEnsembleModel, self).__init__()
-        self.models = nn.ModuleList(model_wrappers)
-        feature_size = sum([model.output_size for model in model_wrappers])
-        self.attention = nn.MultiheadAttention(embed_dim=feature_size, num_heads=8)
+        self.attention = nn.MultiheadAttention(embed_dim=feature_size, num_heads=num_heads)
         self.fc = nn.Linear(feature_size, num_classes)
 
     def forward(self, x):
-        feature_maps = [model.extract_features(x) for model in self.models]
-        combined_features = torch.cat(feature_maps, dim=1)
-        combined_features = combined_features.unsqueeze(0)  # Add sequence dimension
-        attn_output, _ = self.attention(combined_features, combined_features, combined_features)
+        x = x.unsqueeze(0)  # Add sequence dimension for attention
+        attn_output, _ = self.attention(x, x, x)
         attn_output = attn_output.squeeze(0)  # Remove sequence dimension
         logits = self.fc(attn_output)
         return logits
