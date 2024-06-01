@@ -35,7 +35,7 @@ class AdvancedEnsembleModel(pl.LightningModule):
         self.fc = nn.Linear(feature_size, num_classes)
 
     def forward(self, x):
-        x = x.unsqueeze(0)  # Add sequence dimension for attention
+        x = x.unsqueeze(0)  # Add sequence dimension for attention TODO: adapt a dataloader to deliver a sequence of the images 
         attn_output, _ = self.attention(x, x, x)
         attn_output = attn_output.squeeze(0)  # Remove sequence dimension
         logits = self.fc(attn_output)
