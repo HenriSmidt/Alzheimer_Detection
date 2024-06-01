@@ -1,6 +1,7 @@
 import torch
 from torch import nn
 import lightning.pytorch as pl
+from .model_wrappers import ModelWrapper
 
 class SimpleEnsembleModel(pl.LightningModule):
     def __init__(self, model_wrappers, num_classes):
@@ -10,7 +11,7 @@ class SimpleEnsembleModel(pl.LightningModule):
         self.fc = nn.Linear(feature_size, num_classes)
 
     def forward(self, x):
-        feature_maps = [model.get_feature_map(x) for model in self.models]
+        feature_maps = [model.extract_features(x) for model in self.models]
         combined_features = torch.cat(feature_maps, dim=1)
         logits = self.fc(combined_features)
         return logits
@@ -41,7 +42,7 @@ class AdvancedEnsembleModel(pl.LightningModule):
         self.fc = nn.Linear(feature_size, num_classes)
 
     def forward(self, x):
-        feature_maps = [model.get_feature_map(x) for model in self.models]
+        feature_maps = [model.extract_features(x) for model in self.models]
         combined_features = torch.cat(feature_maps, dim=1)
         combined_features = combined_features.unsqueeze(0)  # Add sequence dimension
         attn_output, _ = self.attention(combined_features, combined_features, combined_features)

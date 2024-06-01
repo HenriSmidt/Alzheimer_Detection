@@ -1,6 +1,7 @@
 import unittest
 import torch
 from models import MobileViTWrapper, EfficientNetWrapper, create_ensemble_model
+import lightning.pytorch as pl
 
 class TestEnsembleModels(unittest.TestCase):
     
@@ -13,7 +14,7 @@ class TestEnsembleModels(unittest.TestCase):
         cls.image_size = (3, 224, 224)  # Example image size (C, H, W)
 
         # Initialize model wrappers
-        cls.mobilevit_wrapper = MobileViTWrapper(model_ckpt='path/to/mobilevit/checkpoint', num_labels=cls.num_labels)
+        cls.mobilevit_wrapper = MobileViTWrapper(model_ckpt='apple/mobilevit-small', num_labels=cls.num_labels)
         cls.efficientnet_wrapper = EfficientNetWrapper(model_name='efficientnet-b0', num_classes=cls.num_classes)
         cls.model_wrappers = [cls.mobilevit_wrapper, cls.efficientnet_wrapper]
 

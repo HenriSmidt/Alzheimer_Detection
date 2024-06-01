@@ -1,45 +1,27 @@
-import lightning.pytorch as pl
-from transformers import MobileViTForImageClassification
-from efficientnet_pytorch import EfficientNet
 import torch
-from torch import nn
+import torch.nn as nn
+from .efficientnet_baseline import EfficientNetBaseline
+from .mobilevit_lightning import MobileViTLightning
 
-class GenericModelWrapper(pl.LightningModule):
-    def __init__(self, model, feature_extractor, output_size):
-        super(GenericModelWrapper, self).__init__()
+class ModelWrapper(nn.Module):
+    def __init__(self, model):
+        super(ModelWrapper, self).__init__()
         self.model = model
-        self.feature_extractor = feature_extractor
-        self.output_size = output_size
 
-    def forward(self, x, return_features=False):
-        if return_features:
-            return self.feature_extractor(x)
-        else:
-            return self.model(x).logits
-
-    def get_feature_map(self, x):
-        with torch.no_grad():
-            self.eval()
-            features = self(x, return_features=True)
-            return features
-
-class MobileViTWrapper(GenericModelWrapper):
-    def __init__(self, model_ckpt, num_labels):
-        model = MobileViTForImageClassification.from_pretrained(
-            model_ckpt, num_labels=num_labels, ignore_mismatched_sizes=True
-        )
-        super(MobileViTWrapper, self).__init__(model, self.extract_features, num_labels)
-
-    def extract_features(self, x):
-        outputs = self.model(x, output_hidden_states=True)
-        return outputs.hidden_states[-1]
-
-class EfficientNetWrapper(GenericModelWrapper):
-    def __init__(self, model_name, num_classes):
-        model = EfficientNet.from_pretrained(model_name)
-        output_size = model._fc.in_features
-        model._fc = nn.Linear(output_size, num_classes)
-        super(EfficientNetWrapper, self).__init__(model, self.extract_features, output_size)
+    def forward(self, x):
+        return self.model(x)
 
     def extract_features(self, x):
         return self.model.extract_features(x)
+
+    @property
+    def output_size(self):
+        # Implement logic to return the correct output size
+        # This might depend on the model architecture
+        if isinstance(self.model, EfficientNetBaseline):
+            return self.model.model._fc.in_features
+        elif isinstance(self.model, MobileViTLightning):
+            # Assuming 768 as the feature size for MobileViT
+            return 768
+        else:
+            raise ValueError("Unsupported model type")
