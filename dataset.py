@@ -223,3 +223,62 @@ class MRIImageDataModule(pl.LightningDataModule):
 # train_loader = data_module.train_dataloader()
 # for batch in train_loader:
 #     print(batch.shape)  # Should output torch.Size([batch_size, 3, 224, 224])
+
+class MRIFeatureDataset(Dataset):
+    def __init__(self, csv_file):
+        self.data = pd.read_csv(csv_file)
+        
+        # Identify feature columns and sort them
+        self.feature_columns = sorted([col for col in self.data.columns if col.startswith('slice_')])
+        
+        # Determine sequence length based on the number of feature columns
+        self.sequence_length = len(self.feature_columns)
+
+    def __len__(self):
+        return len(self.data)
+
+    def __getitem__(self, idx):
+        row = self.data.iloc[idx]
+        label = torch.tensor(row['label'], dtype=torch.long)
+        
+        # Initialize sequence with zeros for missing slices
+        sequence = np.zeros((self.sequence_length, len(eval(row[self.feature_columns[0]]))))
+        
+        for i, col in enumerate(self.feature_columns):
+            feature_map = np.array(eval(row[col]))
+            sequence[i] = feature_map
+
+        sequence = torch.tensor(sequence, dtype=torch.float32)
+        return sequence, label
+
+class MRIFeatureDataModule(pl.LightningDataModule):
+    def __init__(self, csv_file, batch_size=32, num_workers=4):
+        super().__init__()
+        self.csv_file = csv_file
+        self.batch_size = batch_size
+        self.num_workers = num_workers
+
+    def setup(self, stage=None):
+        self.dataset = MRIFeatureDataset(self.csv_file)
+
+    def train_dataloader(self):
+        return DataLoader(self.dataset, batch_size=self.batch_size, shuffle=True, num_workers=self.num_workers)
+
+    def val_dataloader(self):
+        return DataLoader(self.dataset, batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers)
+
+    def test_dataloader(self):
+        return DataLoader(self.dataset, batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers)
+
+# # Usage
+# # Replace 'your_data.csv' with the path to your CSV file
+# data_module = MRIFeatureDataModule(csv_file='your_data.csv', batch_size=32)
+# data_module.setup()
+
+# # Example of loading one batch
+# train_loader = data_module.train_dataloader()
+# for batch in train_loader:
+#     sequences, labels = batch
+#     print(sequences.shape)  # Should be (batch_size, sequence_length, feature_map_size)
+#     print(labels.shape)     # Should be (batch_size,)
+#     break
