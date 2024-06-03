@@ -252,23 +252,27 @@ class MRIFeatureDataset(Dataset):
         return sequence, label
 
 class MRIFeatureDataModule(pl.LightningDataModule):
-    def __init__(self, csv_file, batch_size=32, num_workers=4):
+    def __init__(self, train_csv, val_csv, test_csv, batch_size=32, num_workers=4):
         super().__init__()
-        self.csv_file = csv_file
+        self.train_csv = train_csv
+        self.val_csv = val_csv
+        self.test_csv = test_csv
         self.batch_size = batch_size
         self.num_workers = num_workers
 
     def setup(self, stage=None):
-        self.dataset = MRIFeatureDataset(self.csv_file)
+        self.train_dataset = MRIFeatureDataset(self.train_csv)
+        self.val_dataset = MRIFeatureDataset(self.val_csv)
+        self.test_dataset = MRIFeatureDataset(self.test_csv)
 
     def train_dataloader(self):
-        return DataLoader(self.dataset, batch_size=self.batch_size, shuffle=True, num_workers=self.num_workers)
+        return DataLoader(self.train_dataset, batch_size=self.batch_size, shuffle=True, num_workers=self.num_workers)
 
     def val_dataloader(self):
-        return DataLoader(self.dataset, batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers)
+        return DataLoader(self.val_dataset, batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers)
 
     def test_dataloader(self):
-        return DataLoader(self.dataset, batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers)
+        return DataLoader(self.test_dataset, batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers)
 
 # # Usage
 # # Replace 'your_data.csv' with the path to your CSV file
