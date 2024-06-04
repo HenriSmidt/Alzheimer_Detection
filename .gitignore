@@ -4,6 +4,7 @@ tokens.env
 wandb/
 lightning_logs/
 model_checkpoints/
+extracted_features/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
