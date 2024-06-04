@@ -261,7 +261,7 @@ class MRIFeatureDataset(Dataset):
             return sequence, label
         else: 
             arrays = [row[col] for col in self.feature_columns]
-            features = np.concatenate(arrays, axis=1)
+            features = np.concatenate(arrays, axis=0)
             features = torch.tensor(features, dtype=torch.float32)
             return features, label
             
@@ -290,15 +290,3 @@ class MRIFeatureDataModule(pl.LightningDataModule):
     def test_dataloader(self):
         return DataLoader(self.test_dataset, batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers)
 
-# # Usage
-# # Replace 'your_data.csv' with the path to your CSV file
-# data_module = MRIFeatureDataModule(csv_file='your_data.csv', batch_size=32)
-# data_module.setup()
-
-# # Example of loading one batch
-# train_loader = data_module.train_dataloader()
-# for batch in train_loader:
-#     sequences, labels = batch
-#     print(sequences.shape)  # Should be (batch_size, sequence_length, feature_map_size)
-#     print(labels.shape)     # Should be (batch_size,)
-#     break
