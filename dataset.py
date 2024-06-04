@@ -275,6 +275,11 @@ class MRIFeatureDataModule(pl.LightningDataModule):
         self.batch_size = batch_size
         self.num_workers = num_workers
         self.as_sequence = as_sequence
+        with open(val_pkl, 'rb') as f:
+            data =  pickle.load(f)
+            feature_columns = [col for col in data.columns if col.startswith('slice_')]
+            self.sequence_length = len(feature_columns)
+            self.featuremap_length = len(data[feature_columns[0]][0])
 
     def setup(self, stage=None):
         self.train_dataset = MRIFeatureDataset(self.train_pkl, as_sequence=self.as_sequence)
