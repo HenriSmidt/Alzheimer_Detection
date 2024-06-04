@@ -259,18 +259,18 @@ class MRIFeatureDataset(Dataset):
         return sequence, label
 
 class MRIFeatureDataModule(pl.LightningDataModule):
-    def __init__(self, train_csv, val_csv, test_csv, batch_size=32, num_workers=4):
+    def __init__(self, train_pkl, val_pkl, test_pkl, batch_size=32, num_workers=None):
         super().__init__()
-        self.train_csv = train_csv
-        self.val_csv = val_csv
-        self.test_csv = test_csv
+        self.train_pkl = train_pkl
+        self.val_pkl = val_pkl
+        self.test_pkl = test_pkl
         self.batch_size = batch_size
         self.num_workers = num_workers
 
     def setup(self, stage=None):
-        self.train_dataset = MRIFeatureDataset(self.train_csv)
-        self.val_dataset = MRIFeatureDataset(self.val_csv)
-        self.test_dataset = MRIFeatureDataset(self.test_csv)
+        self.train_dataset = MRIFeatureDataset(self.train_pkl)
+        self.val_dataset = MRIFeatureDataset(self.val_pkl)
+        self.test_dataset = MRIFeatureDataset(self.test_pkl)
 
     def train_dataloader(self):
         return DataLoader(self.train_dataset, batch_size=self.batch_size, shuffle=True, num_workers=self.num_workers)
