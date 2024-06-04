@@ -6,6 +6,7 @@ import pytorch_lightning as pl
 from sklearn.model_selection import train_test_split, StratifiedGroupKFold
 import numpy as np
 from utils import get_best_device
+import pickle
 
 
 # Function to perform stratified split based on groups
@@ -227,14 +228,18 @@ class MRIImageDataModule(pl.LightningDataModule):
 #     print(batch.shape)  # Should output torch.Size([batch_size, 3, 224, 224])
 
 class MRIFeatureDataset(Dataset):
-    def __init__(self, csv_file):
-        self.data = pd.read_csv(csv_file)
+    def __init__(self, pickle_file):
+        with open(pickle_file, 'rb') as f:
+            self.data =  pickle.load(f)
         
         # Identify feature columns and sort them
         self.feature_columns = sorted([col for col in self.data.columns if col.startswith('slice_')])
         
         # Determine sequence length based on the number of feature columns
         self.sequence_length = len(self.feature_columns)
+        
+        # Determine the length of the individual feature maps
+        self.featuremap_length = len(self.data[self.feature_columns[0]][0])
 
     def __len__(self):
         return len(self.data)
@@ -244,7 +249,7 @@ class MRIFeatureDataset(Dataset):
         label = torch.tensor(row['label'], dtype=torch.long)
         
         # Initialize sequence with zeros for missing slices
-        sequence = np.zeros((self.sequence_length, len(eval(row[self.feature_columns[0]]))))
+        sequence = np.zeros((self.sequence_length, self.featuremap_length))
         
         for i, col in enumerate(self.feature_columns):
             feature_map = np.array(eval(row[col]))
