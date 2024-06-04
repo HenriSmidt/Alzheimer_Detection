@@ -228,10 +228,11 @@ class MRIImageDataModule(pl.LightningDataModule):
 #     print(batch.shape)  # Should output torch.Size([batch_size, 3, 224, 224])
 
 class MRIFeatureDataset(Dataset):
-    def __init__(self, pickle_file):
+    def __init__(self, pickle_file, as_sequence):
         with open(pickle_file, 'rb') as f:
             self.data =  pickle.load(f)
         
+        self.as_sequence = as_sequence
         # Identify feature columns and sort them
         self.feature_columns = sorted([col for col in self.data.columns if col.startswith('slice_')])
         
@@ -248,29 +249,37 @@ class MRIFeatureDataset(Dataset):
         row = self.data.iloc[idx]
         label = torch.tensor(row['label'], dtype=torch.long)
         
-        # Initialize sequence with zeros for missing slices
-        sequence = np.zeros((self.sequence_length, self.featuremap_length))
-        
-        for i, col in enumerate(self.feature_columns):
-            feature_map = np.array(eval(row[col]))
-            sequence[i] = feature_map
+        if self.as_sequence:
+            # Initialize sequence with zeros for missing slices
+            sequence = np.zeros((self.sequence_length, self.featuremap_length))
+            
+            for i, col in enumerate(self.feature_columns):
+                feature_map = row[col]
+                sequence[i] = feature_map
 
-        sequence = torch.tensor(sequence, dtype=torch.float32)
-        return sequence, label
+            sequence = torch.tensor(sequence, dtype=torch.float32)
+            return sequence, label
+        else: 
+            arrays = [row[col] for col in self.feature_columns]
+            features = np.concatenate(arrays, axis=1)
+            features = torch.tensor(features, dtype=torch.float32)
+            return features, label
+            
 
 class MRIFeatureDataModule(pl.LightningDataModule):
-    def __init__(self, train_pkl, val_pkl, test_pkl, batch_size=32, num_workers=None):
+    def __init__(self, train_pkl, val_pkl, test_pkl, as_sequence=False, batch_size=32, num_workers=None):
         super().__init__()
         self.train_pkl = train_pkl
         self.val_pkl = val_pkl
         self.test_pkl = test_pkl
         self.batch_size = batch_size
         self.num_workers = num_workers
+        self.as_sequence = as_sequence
 
     def setup(self, stage=None):
-        self.train_dataset = MRIFeatureDataset(self.train_pkl)
-        self.val_dataset = MRIFeatureDataset(self.val_pkl)
-        self.test_dataset = MRIFeatureDataset(self.test_pkl)
+        self.train_dataset = MRIFeatureDataset(self.train_pkl, as_sequence=self.as_sequence)
+        self.val_dataset = MRIFeatureDataset(self.val_pkl, as_sequence=self.as_sequence)
+        self.test_dataset = MRIFeatureDataset(self.test_pkl, as_sequence=self.as_sequence)
 
     def train_dataloader(self):
         return DataLoader(self.train_dataset, batch_size=self.batch_size, shuffle=True, num_workers=self.num_workers)
