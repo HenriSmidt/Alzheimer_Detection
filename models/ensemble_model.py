@@ -5,6 +5,7 @@ import lightning.pytorch as pl
 class SimpleEnsembleModel(pl.LightningModule):
     def __init__(self, feature_size, num_classes, lr=1e-3):
         super(SimpleEnsembleModel, self).__init__()
+        self.save_hyperparameters()
         self.fc = nn.Linear(feature_size, num_classes)
         self.lr = lr
 
@@ -13,14 +14,14 @@ class SimpleEnsembleModel(pl.LightningModule):
         return logits
 
     def training_step(self, batch, batch_idx):
-        inputs, labels, _ = batch
+        inputs, labels = batch
         outputs = self(inputs)
         loss = torch.nn.functional.cross_entropy(outputs, labels)
         self.log("train_loss", loss)
         return loss
 
     def validation_step(self, batch, batch_idx):
-        inputs, labels, _ = batch
+        inputs, labels = batch
         outputs = self(inputs)
         loss = torch.nn.functional.cross_entropy(outputs, labels)
         self.log("val_loss", loss)
@@ -31,8 +32,9 @@ class SimpleEnsembleModel(pl.LightningModule):
 
 
 class AdvancedEnsembleModel(pl.LightningModule):
-    def __init__(self, feature_size, num_classes, num_heads=8, max_seq_length=10, lr = 1e-3):
+    def __init__(self, feature_size, num_classes, num_heads=8, max_seq_length=10, lr=1e-3):
         super(AdvancedEnsembleModel, self).__init__()
+        self.save_hyperparameters()
         self.attention = nn.MultiheadAttention(embed_dim=feature_size, num_heads=num_heads)
         self.fc = nn.Linear(feature_size, num_classes)
         self.positional_encoding = nn.Parameter(torch.zeros(max_seq_length, feature_size))
@@ -65,14 +67,14 @@ class AdvancedEnsembleModel(pl.LightningModule):
         return output
 
     def training_step(self, batch, batch_idx):
-        inputs, labels, _ = batch
+        inputs, labels = batch
         outputs = self(inputs)
         loss = torch.nn.functional.cross_entropy(outputs, labels)
         self.log("train_loss", loss)
         return loss
 
     def validation_step(self, batch, batch_idx):
-        inputs, labels, _ = batch
+        inputs, labels = batch
         outputs = self(inputs)
         loss = torch.nn.functional.cross_entropy(outputs, labels)
         self.log("val_loss", loss)

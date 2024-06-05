@@ -267,7 +267,7 @@ class MRIFeatureDataset(Dataset):
             
 
 class MRIFeatureDataModule(pl.LightningDataModule):
-    def __init__(self, train_pkl, val_pkl, test_pkl, as_sequence=False, batch_size=32, num_workers=None):
+    def __init__(self, train_pkl, val_pkl, test_pkl, as_sequence=False, batch_size=32, num_workers=0):
         super().__init__()
         self.train_pkl = train_pkl
         self.val_pkl = val_pkl
