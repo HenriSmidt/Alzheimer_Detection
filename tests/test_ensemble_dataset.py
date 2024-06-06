@@ -65,6 +65,48 @@ class TestMRIFeatureDataset(unittest.TestCase):
         self.assertEqual(label.shape, torch.Size([]))
         self.assertIsInstance(features, torch.Tensor)
         self.assertIsInstance(label, torch.Tensor)
+        
+    def test_batch_loading_as_sequence(self):
+        batch_size = 4
+        data_module = MRIFeatureDataModule(
+            train_pkl=self.pickle_file, 
+            val_pkl=self.pickle_file, 
+            test_pkl=self.pickle_file, 
+            as_sequence=True, 
+            batch_size=batch_size, 
+            num_workers=0
+        )
+        data_module.setup()
+
+        train_loader = data_module.train_dataloader()
+        batch = next(iter(train_loader))
+        sequences, labels = batch
+
+        self.assertEqual(sequences.shape, (batch_size, 3, 5))
+        self.assertEqual(labels.shape, (batch_size,))
+        self.assertIsInstance(sequences, torch.Tensor)
+        self.assertIsInstance(labels, torch.Tensor)
+
+    def test_batch_loading_not_as_sequence(self):
+        batch_size = 4
+        data_module = MRIFeatureDataModule(
+            train_pkl=self.pickle_file, 
+            val_pkl=self.pickle_file, 
+            test_pkl=self.pickle_file, 
+            as_sequence=False, 
+            batch_size=batch_size, 
+            num_workers=0
+        )
+        data_module.setup()
+
+        train_loader = data_module.train_dataloader()
+        batch = next(iter(train_loader))
+        features, labels = batch
+
+        self.assertEqual(features.shape, (batch_size, 15))
+        self.assertEqual(labels.shape, (batch_size,))
+        self.assertIsInstance(features, torch.Tensor)
+        self.assertIsInstance(labels, torch.Tensor)
 
 if __name__ == '__main__':
     unittest.main()
