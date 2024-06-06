@@ -34,7 +34,6 @@ class SimpleEnsembleModel(pl.LightningModule):
         return torch.optim.AdamW(self.parameters(), lr=self.lr)
 
 
-from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 
 class MediumEnsembleModel(pl.LightningModule):
     def __init__(self, feature_size, num_classes, lr=1e-3):
@@ -79,9 +78,10 @@ class MediumEnsembleModel(pl.LightningModule):
         return {'optimizer': optimizer, 'lr_scheduler': scheduler, 'monitor': 'val_loss'}
 
 
-# Trainer with Early Stopping
-early_stop_callback = EarlyStopping(monitor='val_loss', patience=10, verbose=True, mode='min')
-trainer = pl.Trainer(callbacks=[early_stop_callback])
+# # Trainer with Early Stopping
+# from pytorch_lightning.callbacks.early_stopping import EarlyStopping
+# early_stop_callback = EarlyStopping(monitor='val_loss', patience=10, verbose=True, mode='min')
+# trainer = pl.Trainer(callbacks=[early_stop_callback])
 
 
 class AdvancedEnsembleModel(pl.LightningModule):

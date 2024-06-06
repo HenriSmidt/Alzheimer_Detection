@@ -7,6 +7,7 @@ from sklearn.model_selection import train_test_split, StratifiedGroupKFold
 import numpy as np
 from utils import get_best_device
 import pickle
+from sampler import create_generic_weighted_sampler
 
 
 # Function to perform stratified split based on groups
@@ -203,12 +204,18 @@ class MRIImageDataModule(pl.LightningDataModule):
             test_df, self.slice_number, transform=self.transform, return_id=True
         )
 
-    def train_dataloader(self):
+    def train_dataloader(self, sampling_strategy='sqrt', smoothing=0.0):
+        """    Parameters:
+                - strategy: The strategy for weight computation ('inverse', 'sqrt', 'log', 'exp', 'custom') (default: 'sqrt')
+                - smoothing: A smoothing factor to add to class counts of the sampler to avoid harsh weights (default: 0.0)
+        """
+        sampler = create_generic_weighted_sampler(self.train_dataset, strategy=sampling_strategy, smoothing=smoothing)
         return DataLoader(
             self.train_dataset,
             batch_size=self.batch_size,
             shuffle=True,
             num_workers=self.num_workers,
+            sampler=sampler,
         )
 
     def val_dataloader(self):
@@ -302,8 +309,13 @@ class MRIFeatureDataModule(pl.LightningDataModule):
         self.val_dataset = MRIFeatureDataset(self.val_pkl, as_sequence=self.as_sequence)
         self.test_dataset = MRIFeatureDataset(self.test_pkl, as_sequence=self.as_sequence)
 
-    def train_dataloader(self):
-        return DataLoader(self.train_dataset, batch_size=self.batch_size, shuffle=True, num_workers=self.num_workers)
+    def train_dataloader(self, sampling_strategy='sqrt', smoothing=0.0):
+        """    Parameters:
+                - strategy: The strategy for weight computation ('inverse', 'sqrt', 'log', 'exp', 'custom') (default: 'sqrt')
+                - smoothing: A smoothing factor to add to class counts of the sampler to avoid harsh weights (default: 0.0)
+        """
+        sampler = create_generic_weighted_sampler(self.train_dataset, strategy=sampling_strategie, smoothing=smoothing)
+        return DataLoader(self.train_dataset, batch_size=self.batch_size, shuffle=True, num_workers=self.num_workers, sampler=sampler)
 
     def val_dataloader(self):
         return DataLoader(self.val_dataset, batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers)

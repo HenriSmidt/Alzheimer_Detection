@@ -1,8 +1,10 @@
 from .dataset import (
-    PreprocessDataset,
     MRIImageDataModule,
     MRIDataset,
     stratified_group_split,
+    MRIFeatureDataModule,
+    MRIFeatureDataset
 )
+from .sampler import WeightedRandomSampler
 
-__all__ = (PreprocessDataset, MRIImageDataModule, MRIDataset, stratified_group_split)
+__all__ = (MRIImageDataModule, MRIDataset, stratified_group_split, WeightedRandomSampler, MRIFeatureDataModule, MRIFeatureDataset)
