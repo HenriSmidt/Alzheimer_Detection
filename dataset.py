@@ -130,6 +130,14 @@ class MRIDataset(Dataset):
                     f"KeyError: The slice number {self.slice_number} or id {id} does not exist in the Data."
                 )
         return None
+    
+    def get_labels(self):
+        """
+        Returns a list of labels for each sample in the dataset.
+        This method is used by the weighted sampler to obtain the class distribution.
+        """
+        labels = [self.label_map[self.df.loc[id]["CDR"]] for id in self.valid_ids]
+        return labels
 
 
 class MRIImageDataModule(pl.LightningDataModule):
@@ -264,6 +272,14 @@ class MRIFeatureDataset(Dataset):
             features = np.concatenate(arrays, axis=0)
             features = torch.tensor(features, dtype=torch.float32)
             return features, label
+        
+    def get_labels(self):
+        """
+        Returns a list of labels for each sample in the dataset.
+        This method is used by the weighted sampler to obtain the class distribution.
+        """
+        return self.data['label'].tolist()    
+    
             
 
 class MRIFeatureDataModule(pl.LightningDataModule):
