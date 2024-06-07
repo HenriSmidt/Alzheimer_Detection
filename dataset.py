@@ -29,22 +29,18 @@ class MRIDataset(Dataset):
     def __init__(self, dataframe, slice_number, transform=None, return_id=False):
         self.slice_number = slice_number
         self.transform = transform
-        self.df = dataframe
-        self.valid_ids = dataframe[dataframe["slice_number"] == slice_number][
-            "ID"
-        ].unique()
-        self.df = (
-            self.df[self.df["ID"].isin(self.valid_ids)]
-            .set_index(["ID", "slice_number"])
-            .sort_index()
-        )
+        self.valid_ids = dataframe[dataframe["slice_number"] == slice_number]["ID"].unique()
+        self.df = dataframe[dataframe["ID"].isin(self.valid_ids)].set_index(["ID", "slice_number"]).sort_index()
+
         self.device = get_best_device()
         self.return_id = return_id
+        self.label_map = {0.0: 0, 0.5: 1, 1.0: 2, 2.0: 3}
 
     def __len__(self):
         return len(self.valid_ids)
 
     def __getitem__(self, idx):
+
         id = self.valid_ids[idx]
         images = []
 
@@ -67,11 +63,10 @@ class MRIDataset(Dataset):
             image_stack = self.transform(image_stack)
 
         # Define the mapping dictionary
-        label_map = {0.0: 0, 0.5: 1, 1.0: 2, 2.0: 3}
 
         # Convert the label using the mapping dictionary
         float_label = self.df.loc[(id, self.slice_number)]["CDR"].iloc[0]
-        label = torch.tensor(label_map[float(float_label)]).long()
+        label = torch.tensor(self.label_map[float(float_label)]).long()
         age = torch.tensor(self.df.loc[(id, self.slice_number)]["Age"]).float()
 
         label = label.to(torch.device("mps"))
@@ -137,8 +132,9 @@ class MRIDataset(Dataset):
         Returns a list of labels for each sample in the dataset.
         This method is used by the weighted sampler to obtain the class distribution.
         """
-        labels = [self.label_map[self.df.loc[id]["CDR"]] for id in self.valid_ids]
-        return labels
+        labels = [self.df.loc[(id, self.slice_number), "CDR"].iloc[0] for id in self.valid_ids]
+        converted_labels = [self.label_map[float(label)] for label in labels]
+        return converted_labels
 
 
 class MRIImageDataModule(pl.LightningDataModule):
@@ -148,7 +144,7 @@ class MRIImageDataModule(pl.LightningDataModule):
         transform=None,
         batch_size=32,
         slice_number=87,
-        num_workers=None,
+        num_workers=0,
         always_return_id=False,
     ):
         super().__init__()
@@ -173,6 +169,7 @@ class MRIImageDataModule(pl.LightningDataModule):
         train_val_ids, test_ids = stratified_group_split(
             data, "ID", "CDR", test_size=0.125
         )
+        
 
         # Creating the train + validation DataFrame for further splitting
         train_val_df = data[data["ID"].isin(train_val_ids)]
@@ -187,10 +184,9 @@ class MRIImageDataModule(pl.LightningDataModule):
             stratify=stratify_train_val_values,
             random_state=42,
         )
-
-        # Creating the final DataFrames
-        train_df = data[data["ID"].isin(train_ids)]
-        val_df = data[data["ID"].isin(val_ids)]
+        
+        train_df = train_val_df[train_val_df["ID"].isin(train_ids)]
+        val_df = train_val_df[train_val_df["ID"].isin(val_ids)]
         test_df = data[data["ID"].isin(test_ids)]
 
         # Assuming MRIDataset is a class that takes a DataFrame, slice number, and optional transform as arguments
@@ -213,9 +209,9 @@ class MRIImageDataModule(pl.LightningDataModule):
         return DataLoader(
             self.train_dataset,
             batch_size=self.batch_size,
-            shuffle=True,
             num_workers=self.num_workers,
             sampler=sampler,
+            shuffle=False,
         )
 
     def val_dataloader(self):
@@ -314,8 +310,8 @@ class MRIFeatureDataModule(pl.LightningDataModule):
                 - strategy: The strategy for weight computation ('inverse', 'sqrt', 'log', 'exp', 'custom') (default: 'sqrt')
                 - smoothing: A smoothing factor to add to class counts of the sampler to avoid harsh weights (default: 0.0)
         """
-        sampler = create_generic_weighted_sampler(self.train_dataset, strategy=sampling_strategie, smoothing=smoothing)
-        return DataLoader(self.train_dataset, batch_size=self.batch_size, shuffle=True, num_workers=self.num_workers, sampler=sampler)
+        sampler = create_generic_weighted_sampler(self.train_dataset, strategy=sampling_strategy, smoothing=smoothing)
+        return DataLoader(self.train_dataset, batch_size=self.batch_size, num_workers=self.num_workers, sampler=sampler)
 
     def val_dataloader(self):
         return DataLoader(self.val_dataset, batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers)
