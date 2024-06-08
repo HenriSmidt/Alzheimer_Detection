@@ -36,3 +36,55 @@ class EfficientNetBaseline(LightningModule):
 
     def configure_optimizers(self):
         return torch.optim.AdamW(self.parameters(), lr=self.lr)
+class EfficientNetBaseline(LightningModule):
+    def __init__(self, model_name='efficientnet-b0', num_classes=4, lr=1e-3, alpha=0.5, temperature=2.0):
+        super().__init__()
+        self.save_hyperparameters()
+        self.model = EfficientNet.from_pretrained(model_name)
+        self.model._fc = nn.Linear(self.model._fc.in_features, num_classes)
+        self.criterion = nn.CrossEntropyLoss()
+        self.kd_criterion = nn.KLDivLoss(reduction='batchmean')
+        self.lr = lr
+        self.alpha = alpha
+        self.temperature = temperature
+
+    def forward(self, x):
+        return self.model(x)
+
+    def training_step(self, batch, batch_idx):
+        # Unpack the batch
+        if len(batch) == 5:
+            images, labels, age, _, soft_labels = batch
+        else:
+            images, labels, age, _ = batch
+            soft_labels = None
+        
+        images = images.float()
+        logits = self(images)
+        loss_ce = self.criterion(logits, labels)
+
+        if soft_labels is not None:
+            soft_labels = soft_labels.to(self.device)
+            # Apply temperature scaling
+            logits_distilled = torch.nn.functional.log_softmax(logits / self.temperature, dim=1) # applying log_softmax on the student labels. log needed for KL divergence
+            soft_labels_distilled = torch.nn.functional.softmax(soft_labels / self.temperature, dim=1) # applying the softmax on the raw teacher labels
+            # Compute knowledge distillation loss
+            loss_kd = self.kd_criterion(logits_distilled, soft_labels_distilled)
+            # Combine the two losses
+            loss = self.alpha * loss_ce + (1 - self.alpha) * loss_kd * (self.temperature ** 2)
+        else:
+            loss = loss_ce
+
+        self.log("train_loss", loss)
+        return loss
+
+    def validation_step(self, batch, batch_idx):
+        images, labels, age, _ = batch
+        images = images.float()
+        logits = self(images)
+        loss = self.criterion(logits, labels)
+        self.log("val_loss", loss)
+        return loss
+
+    def configure_optimizers(self):
+        return torch.optim.AdamW(self.parameters(), lr=self.lr)
