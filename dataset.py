@@ -26,55 +26,52 @@ def stratified_group_split(
 
 
 class MRIDataset(Dataset):
-    def __init__(self, dataframe, slice_number, transform=None, return_id=False):
+    def __init__(self, dataframe, slice_number, transform=None, return_id=False, soft_labels=None):
         self.slice_number = slice_number
         self.transform = transform
         self.valid_ids = dataframe[dataframe["slice_number"] == slice_number]["ID"].unique()
         self.df = dataframe[dataframe["ID"].isin(self.valid_ids)].set_index(["ID", "slice_number"]).sort_index()
-
         self.device = get_best_device()
         self.return_id = return_id
         self.label_map = {0.0: 0, 0.5: 1, 1.0: 2, 2.0: 3}
+        self.soft_labels = soft_labels
 
     def __len__(self):
         return len(self.valid_ids)
 
     def __getitem__(self, idx):
-
         id = self.valid_ids[idx]
         images = []
-
         for offset in (-1, 0, 1):
             slice_path = self.get_random_path(id, self.slice_number + offset)
             image = Image.open(slice_path).convert("L")
             image = np.array(image)
             images.append(image)
 
-        # Stack to create a 3-channel image
-        image_stack = np.stack(images, axis=-1)  # Shape will be (H, W, C)
-        image_stack = torch.tensor(image_stack).permute(
-            2, 0, 1
-        )  # Convert to (C, H, W) tensor
-
-        # Normalize the image stack to [0, 1]
-        image_stack = image_stack.to(torch.device("mps"))
+        image_stack = np.stack(images, axis=-1)
+        image_stack = torch.tensor(image_stack).permute(2, 0, 1)
+        image_stack = image_stack.to(self.device)
 
         if self.transform:
             image_stack = self.transform(image_stack)
 
-        # Define the mapping dictionary
-
-        # Convert the label using the mapping dictionary
         float_label = self.df.loc[(id, self.slice_number)]["CDR"].iloc[0]
         label = torch.tensor(self.label_map[float(float_label)]).long()
         age = torch.tensor(self.df.loc[(id, self.slice_number)]["Age"]).float()
 
-        label = label.to(torch.device("mps"))
+        item = {
+            'inputs': image_stack,
+            'labels': label,
+            'age': age
+        }
+
+        if self.soft_labels is not None:
+            item['soft_labels'] = torch.tensor(self.soft_labels[id]).float()
 
         if self.return_id:
-            return image_stack, label, age, id
-        else:
-            return image_stack, label, age
+            item['id'] = id
+
+        return item
 
     def get_random_path(self, id, slice_num):
         try:
