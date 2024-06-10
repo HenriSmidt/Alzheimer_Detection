@@ -8,21 +8,20 @@ from models import MobileViTLightning, EfficientNetBaseline
 from transformers import MobileViTImageProcessor
 import pickle
 import glob
-from utils import get_best_device
+from utils import get_best_device, set_reproducibility
 
 def generate_soft_labels(model, dataloader, device, output_dir, slice_number):
     model.eval()
     soft_labels = {}
-    
+                
     with torch.no_grad():
         for batch in dataloader:
             inputs = batch['inputs'].to(device).float()
             ids = batch['id']
-            logits = model(inputs)
-            soft_labels_batch = torch.nn.functional.softmax(logits / model.temperature, dim=1).cpu().numpy()
+            logits = model(inputs).cpu().numpy()  # Save raw logits
             
-            for id, soft_label in zip(ids, soft_labels_batch):
-                soft_labels[id] = soft_label
+            for id, logit in zip(ids, logits):
+                soft_labels[id] = logit
 
     # Save soft labels for each slice
     os.makedirs(output_dir, exist_ok=True)
@@ -36,6 +35,8 @@ def get_ckpt_files(folder_path):
     return glob.glob(os.path.join(folder_path, "*.ckpt"))
 
 def main():
+    set_reproducibility(42) # So that the train val test split remains the same
+    
     # Paths and parameters
     csv_path = "Data/metadata_for_preprocessed_files.csv"
     batch_size = 32
