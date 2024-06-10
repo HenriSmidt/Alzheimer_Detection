@@ -143,6 +143,7 @@ class MRIImageDataModule(pl.LightningDataModule):
         slice_number=87,
         num_workers=0,
         always_return_id=False,
+        soft_labels=None,
     ):
         super().__init__()
         self.data_path = data_path
@@ -151,6 +152,7 @@ class MRIImageDataModule(pl.LightningDataModule):
         self.transform = transform
         self.num_workers = num_workers
         self.always_return_id = always_return_id
+        self.soft_labels = soft_labels
 
     def setup(self, stage=None):
         data = pd.read_csv(self.data_path)
@@ -188,7 +190,7 @@ class MRIImageDataModule(pl.LightningDataModule):
 
         # Assuming MRIDataset is a class that takes a DataFrame, slice number, and optional transform as arguments
         self.train_dataset = MRIDataset(
-            train_df, self.slice_number, transform=self.transform, return_id=self.always_return_id
+            train_df, self.slice_number, transform=self.transform, return_id=self.always_return_id, soft_labels=self.soft_labels
         )
         self.val_dataset = MRIDataset(
             val_df, self.slice_number, transform=self.transform, return_id=self.always_return_id
