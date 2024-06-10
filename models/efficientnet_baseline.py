@@ -4,7 +4,7 @@ from efficientnet_pytorch import EfficientNet
 from lightning.pytorch import LightningModule
 
 class EfficientNetBaseline(LightningModule):
-    def __init__(self, model_name='efficientnet-b0', num_classes=4, lr=1e-3, alpha=0.5, temperature=2.0):
+    def __init__(self, model_name='efficientnet-b0', num_classes=4, lr=1e-3, self_distillation_alpha=0.5, self_distillation_temperature=2.0):
         super().__init__()
         self.save_hyperparameters()
         self.model = EfficientNet.from_pretrained(model_name)
@@ -12,8 +12,8 @@ class EfficientNetBaseline(LightningModule):
         self.criterion = nn.CrossEntropyLoss()
         self.kd_criterion = nn.KLDivLoss(reduction='batchmean')
         self.lr = lr
-        self.alpha = alpha
-        self.temperature = temperature
+        self.self_distillation_alpha = self_distillation_alpha
+        self.self_distillation_temperature = self_distillation_temperature
 
     def forward(self, x):
         return self.model(x)
@@ -32,13 +32,13 @@ class EfficientNetBaseline(LightningModule):
 
         if soft_labels is not None:
             soft_labels = soft_labels.to(self.device)
-            # Apply temperature scaling
-            logits_distilled = torch.nn.functional.log_softmax(logits / self.temperature, dim=1)
-            soft_labels_distilled = torch.nn.functional.softmax(soft_labels / self.temperature, dim=1)
+            # Apply self_distillation_temperature scaling
+            logits_distilled = torch.nn.functional.log_softmax(logits / self.self_distillation_temperature, dim=1)
+            soft_labels_distilled = torch.nn.functional.softmax(soft_labels / self.self_distillation_temperature, dim=1)
             # Compute knowledge distillation loss
             loss_kd = self.kd_criterion(logits_distilled, soft_labels_distilled)
             # Combine the two losses
-            loss = self.alpha * loss_ce + (1 - self.alpha) * loss_kd * (self.temperature ** 2)
+            loss = self.self_distillation_alpha * loss_ce + (1 - self.self_distillation_alpha) * loss_kd * (self.self_distillation_temperature ** 2)
         else:
             loss = loss_ce
 

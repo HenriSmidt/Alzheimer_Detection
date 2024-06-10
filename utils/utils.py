@@ -2,6 +2,10 @@ import torch
 import matplotlib.pyplot as plt
 import matplotlib.font_manager as font_manager
 from cycler import cycler
+import random
+import lightning.pytorch as pl
+import numpy as np
+
 
 
 def get_best_device():
@@ -46,3 +50,26 @@ def set_plot_style():
         }
     )
     return selected_colors
+
+
+
+def set_reproducibility(seed=42):
+    # Set Python random seed
+    random.seed(seed)
+
+    # Set Numpy seed
+    np.random.seed(seed)
+
+    # Set PyTorch seed
+    torch.manual_seed(seed)
+
+    # If using CUDA:
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
+
+    # Control sources of nondeterminism
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+
+    # PyTorch Lightning utility to seed everything
+    pl.seed_everything(seed, workers=True)
