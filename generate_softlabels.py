@@ -92,7 +92,7 @@ def main():
                 always_return_id=True
             )
             data_module.setup()
-            dataloader = data_module.train_dataloader()
+            dataloader = data_module.train_dataloader(shuffle=False)
 
             # Output directory for soft labels
             output_dir = f"soft_labels/{model_name}"

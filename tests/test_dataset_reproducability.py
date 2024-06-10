@@ -31,7 +31,7 @@ class TestDataModuleSplit(unittest.TestCase):
         
         # Reset reproducibility and reinitialize the DataModule to check consistency
         set_reproducibility(42)
-        data_module = MRIImageDataModule(data_path=self.csv_path, slice_number=65, batch_size=32)
+        data_module = MRIImageDataModule(data_path=self.csv_path, slice_number=86, batch_size=32)
         data_module.setup()
         
         # Get the datasets again
