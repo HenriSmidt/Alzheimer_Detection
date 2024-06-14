@@ -40,15 +40,15 @@ class MediumEnsembleModel(pl.LightningModule):
         super(SimpleEnsembleModel, self).__init__()
         self.save_hyperparameters()
         self.fc = nn.Sequential(
-            nn.Linear(feature_size, 512),
-            nn.BatchNorm1d(512),
-            nn.ReLU(),
-            nn.Dropout(0.5),
-            nn.Linear(512, 256),
+            nn.Linear(feature_size, 256),
             nn.BatchNorm1d(256),
             nn.ReLU(),
             nn.Dropout(0.5),
-            nn.Linear(256, num_classes)
+            nn.Linear(256, 128),
+            nn.BatchNorm1d(128),
+            nn.ReLU(),
+            nn.Dropout(0.5),
+            nn.Linear(128, num_classes)
         )
         self.lr = lr
 
@@ -90,6 +90,17 @@ class AdvancedEnsembleModel(pl.LightningModule):
         self.save_hyperparameters()
         self.attention = nn.MultiheadAttention(embed_dim=feature_size, num_heads=num_heads)
         self.fc = nn.Linear(feature_size, num_classes)
+        self.fc = nn.Sequential(
+            nn.Linear(feature_size, 256),
+            nn.BatchNorm1d(256),
+            nn.ReLU(),
+            nn.Dropout(0.5),
+            nn.Linear(256, 128),
+            nn.BatchNorm1d(128),
+            nn.ReLU(),
+            nn.Dropout(0.5),
+            nn.Linear(128, num_classes)
+        )
         self.positional_encoding = nn.Parameter(torch.zeros(max_seq_length, feature_size))
         self.layer_norm1 = nn.LayerNorm(feature_size)
         self.layer_norm2 = nn.LayerNorm(feature_size)
