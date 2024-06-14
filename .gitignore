@@ -6,6 +6,8 @@ lightning_logs/
 model_checkpoints/
 extracted_features/
 soft_labels/ 
+predictions/
+plots/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
