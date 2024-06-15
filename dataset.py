@@ -8,6 +8,9 @@ import numpy as np
 from utils import get_best_device
 import pickle
 from sampler import create_generic_weighted_sampler
+from torchvision import transforms
+from transformers import MobileViTImageProcessor
+
 
 
 # Function to perform stratified split based on groups
@@ -23,6 +26,22 @@ def stratified_group_split(
         random_state=random_state,
     )
     return train_val_ids, test_ids
+
+
+def get_transform(model_name, model_ckpt):
+    if model_name == "mobilevit-s":
+        processor = MobileViTImageProcessor.from_pretrained(model_ckpt)
+        return lambda image: processor(image, return_tensors="pt")["pixel_values"].squeeze(0)
+    elif model_name == "efficientnet-b2":
+        transform = transforms.Compose([
+            transforms.ToPILImage(),
+            transforms.Resize(224),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+        ])
+        return transform
+    else:
+        return None
 
 
 class MRIDataset(Dataset):
