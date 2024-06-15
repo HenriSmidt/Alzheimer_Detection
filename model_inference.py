@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 from transformers import MobileViTImageProcessor
 import os
-from dataset import MRIImageDataModule
+from dataset import MRIImageDataModule, get_transform
 from models import MobileViTLightning, EfficientNetBaseline
 from utils import get_best_device
 from torchvision import transforms
@@ -48,22 +48,6 @@ model_configs = {
 
 # Define the slice numbers
 slice_numbers = ["65", "86", "56", "95", "62", "35", "59", "74", "80", "134"]
-
-# Load and preprocess the MRI dataset
-def get_transform(model_name, model_ckpt):
-    if model_name == "mobilevit-s":
-        processor = MobileViTImageProcessor.from_pretrained(model_ckpt)
-        return lambda image: processor(image, return_tensors="pt")["pixel_values"].squeeze(0)
-    elif model_name == "efficientnet-b2":
-        transform = transforms.Compose([
-            transforms.ToPILImage(),
-            transforms.Resize(224),
-            transforms.ToTensor(),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-        ])
-        return transform
-    else:
-        return None
 
 # Function to apply softmax after averaging predictions
 def softmax(x):
