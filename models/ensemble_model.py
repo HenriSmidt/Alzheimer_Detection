@@ -9,6 +9,7 @@ class SimpleEnsembleModel(pl.LightningModule):
         self.save_hyperparameters()
         self.fc = nn.Linear(feature_size, num_classes)
         self.lr = lr
+        self.num_classes = num_classes
 
     def forward(self, x):
         logits = self.fc(x)
@@ -25,7 +26,7 @@ class SimpleEnsembleModel(pl.LightningModule):
         inputs, labels = batch
         outputs = self(inputs)
         loss = torch.nn.functional.cross_entropy(outputs, labels)
-        acc = accuracy(outputs, labels)
+        acc = accuracy(outputs, labels, task='multiclass', num_classes=self.num_classes)
         self.log("val_loss", loss)
         self.log("val_acc", acc)
         return loss
@@ -37,7 +38,7 @@ class SimpleEnsembleModel(pl.LightningModule):
 
 class MediumEnsembleModel(pl.LightningModule):
     def __init__(self, feature_size, num_classes, lr=1e-3):
-        super(SimpleEnsembleModel, self).__init__()
+        super(MediumEnsembleModel, self).__init__()
         self.save_hyperparameters()
         self.fc = nn.Sequential(
             nn.Linear(feature_size, 256),
@@ -51,6 +52,7 @@ class MediumEnsembleModel(pl.LightningModule):
             nn.Linear(128, num_classes)
         )
         self.lr = lr
+        self.num_classes = num_classes
 
     def forward(self, x):
         logits = self.fc(x)
@@ -67,7 +69,7 @@ class MediumEnsembleModel(pl.LightningModule):
         inputs, labels = batch
         outputs = self(inputs)
         loss = torch.nn.functional.cross_entropy(outputs, labels)
-        acc = accuracy(outputs, labels)
+        acc = accuracy(outputs, labels, task='multiclass', num_classes=self.num_classes)
         self.log("val_loss", loss)
         self.log("val_acc", acc)
         return loss
@@ -106,6 +108,7 @@ class AdvancedEnsembleModel(pl.LightningModule):
         self.layer_norm2 = nn.LayerNorm(feature_size)
         self.dropout = nn.Dropout(p=0.5)
         self.lr = lr
+        self.num_classes = num_classes
 
     def forward(self, x):
         x = x.transpose(0, 1)  # Transpose to (sequence_length, batch_size, feature_size)
@@ -142,7 +145,7 @@ class AdvancedEnsembleModel(pl.LightningModule):
         inputs, labels = batch
         outputs = self(inputs)
         loss = torch.nn.functional.cross_entropy(outputs, labels)
-        acc = accuracy(outputs, labels)
+        acc = accuracy(outputs, labels, task='multiclass', num_classes=self.num_classes)
         self.log("train_loss", loss)
         self.log("train_acc", acc)
         return loss
@@ -151,7 +154,7 @@ class AdvancedEnsembleModel(pl.LightningModule):
         inputs, labels = batch
         outputs = self(inputs)
         loss = torch.nn.functional.cross_entropy(outputs, labels)
-        acc = accuracy(outputs, labels)
+        acc = accuracy(outputs, labels, task='multiclass', num_classes=self.num_classes)
         self.log("val_loss", loss)
         self.log("val_acc", acc)
         return loss
