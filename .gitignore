@@ -8,6 +8,7 @@ extracted_features/
 soft_labels/ 
 predictions/
 plots/
+csvs/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
