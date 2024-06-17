@@ -8,17 +8,17 @@ from sklearn.metrics import f1_score
 from tqdm import tqdm
 from utils import set_plot_style
 
-# Settings for the f1 calculation
-weighted_or_average_f1 = 'weighted'
+set_plot_style()
+
+weighted_or_average_f1 = 'average'
 if weighted_or_average_f1 == 'weighted':
     average = 'weighted'
+    ensemble_column_name = 'test_f1_weighted'
     ylabel = 'Weighted F1 Score'
 elif weighted_or_average_f1 == 'average':
     average = 'macro'
+    ensemble_column_name = 'test_f1_individual'
     ylabel = 'Average F1 Score'
-
-
-set_plot_style()
 
 # Define the root directory of the predictions
 root_dir = "predictions"
@@ -109,6 +109,9 @@ for category in os.listdir(root_dir):
 
         process_csv_files(category, model_name, slice_number="65")
 
+filtered_file_path = 'filtered_ensemble_results.csv'
+filtered_df = pd.read_csv(filtered_file_path)
+
 # Separate the models
 efficientnet_keys = [
     "baseline_models_efficientnet-b2",
@@ -126,29 +129,30 @@ mobilevit_keys = [
 efficientnet_data = [f1_scores_single_slice["baseline_models_efficientnet-b2"]] + [f1_scores[key] for key in efficientnet_keys if key in f1_scores]
 mobilevit_data = [f1_scores_single_slice["baseline_models_mobilevit-s"]] + [f1_scores[key] for key in mobilevit_keys if key in f1_scores]
 
-efficientnet_data_merged = [f1_scores_single_slice_merged["baseline_models_efficientnet-b2"]] + [f1_scores_merged[key] for key in efficientnet_keys if key in f1_scores_merged]
-mobilevit_data_merged = [f1_scores_single_slice_merged["baseline_models_mobilevit-s"]] + [f1_scores_merged[key] for key in mobilevit_keys if key in f1_scores_merged]
+# Add ensemble results to the data
+efficientnet_ensemble_data = [filtered_df[(filtered_df['model_name'] == 'efficientnet-b2') & 
+                                          (filtered_df['ensemble_variant'] == variant)][ensemble_column_name].values 
+                              for variant in ['simple', 'medium', 'advanced']]
+mobilevit_ensemble_data = [filtered_df[(filtered_df['model_name'] == 'MobileVit-s') & 
+                                       (filtered_df['ensemble_variant'] == variant)][ensemble_column_name].values 
+                           for variant in ['simple', 'medium', 'advanced']]
 
-efficientnet_labels = ["Single Slice\nEfficientNet", "Previous\n+ 9 Slice", "Previous\n+ Sampler", "Previous\n+ Self-Distillation"]
-mobilevit_labels = ["Single Slice\nMobileVit", "Previous\n+ 9 Slices", "Previous\n+ Sampler", "Previous\n+ Self-Distillation"]
+efficientnet_data.extend(efficientnet_ensemble_data)
+mobilevit_data.extend(mobilevit_ensemble_data)
 
-efficientnet_means = [np.mean(f1_scores_single_slice["baseline_models_efficientnet-b2"])] + [np.mean(f1_scores[key]) for key in efficientnet_keys if key in f1_scores]
-mobilevit_means = [np.mean(f1_scores_single_slice["baseline_models_mobilevit-s"])] + [np.mean(f1_scores[key]) for key in mobilevit_keys if key in f1_scores]
+efficientnet_labels = ["Single Slice\nEfficientNet", "Previous\n+ 9 Slice", "Previous\n+ Sampler", "Previous\n+ Self-Distillation", "Simple Ensemble", "Medium Ensemble", "Advanced Ensemble"]
+mobilevit_labels = ["Single Slice\nMobileVit", "Previous\n+ 9 Slices", "Previous\n+ Sampler", "Previous\n+ Self-Distillation", "Simple Ensemble", "Medium Ensemble", "Advanced Ensemble"]
 
-efficientnet_means_merged = [np.mean(f1_scores_single_slice_merged["baseline_models_efficientnet-b2"])] + [np.mean(f1_scores_merged[key]) for key in efficientnet_keys if key in f1_scores_merged]
-mobilevit_means_merged = [np.mean(f1_scores_single_slice_merged["baseline_models_mobilevit-s"])] + [np.mean(f1_scores_merged[key]) for key in mobilevit_keys if key in f1_scores_merged]
+efficientnet_means = [np.mean(data) for data in efficientnet_data]
+mobilevit_means = [np.mean(data) for data in mobilevit_data]
 
 # Determine y-axis limits
 all_f1_scores = efficientnet_data + mobilevit_data
-y_min = min([min(scores) for scores in all_f1_scores]) - 0.03
-y_max = max([max(scores) for scores in all_f1_scores]) + 0.03
-
-all_f1_scores_merged = efficientnet_data_merged + mobilevit_data_merged
-y_min_merged = min([min(scores) for scores in all_f1_scores_merged]) - 0.03
-y_max_merged = max([max(scores) for scores in all_f1_scores_merged]) + 0.03
+y_min = min([min(scores) for scores in all_f1_scores if len(scores) > 0]) - 0.03
+y_max = max([max(scores) for scores in all_f1_scores if len(scores) > 0]) + 0.03
 
 # Create subplots for original classes
-fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(12, 5), sharey=True)
+fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(14, 6), sharey=True)
 
 # Plot EfficientNet models
 axes[0].boxplot(efficientnet_data)
@@ -174,37 +178,8 @@ for i, mean in enumerate(mobilevit_means):
     axes[1].text(i + 1, mean, f'{mean:.2f}', ha='center', va='bottom', color='red', fontsize=12)
 
 plt.tight_layout()
-plt.savefig(f"plots/comparative_f1_scores_{average}_boxplot.pdf", format="pdf", bbox_inches="tight")
+plt.savefig(f"plots/comparative_f1_scores_{average}_boxplot_ensemble_and_model.pdf", format="pdf", bbox_inches="tight")
 plt.show()
 plt.close()
 
-# Create subplots for merged classes
-fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(12, 5), sharey=True)
 
-# Plot EfficientNet models with merged classes
-axes[0].boxplot(efficientnet_data_merged)
-axes[0].set_title("F1 Scores for EfficientNet-b2 Models (Classes Merged)")
-axes[0].set_xlabel("Model Strategy")
-axes[0].set_ylabel(ylabel)
-axes[0].set_xticks(range(1, len(efficientnet_labels) + 1))
-axes[0].set_xticklabels(efficientnet_labels)
-axes[0].set_ylim(y_min_merged, y_max_merged)
-
-for i, mean in enumerate(efficientnet_means_merged):
-    axes[0].text(i + 1, mean, f'{mean:.2f}', ha='center', va='bottom', color='red', fontsize=12)
-
-# Plot MobileViT models with merged classes
-axes[1].boxplot(mobilevit_data_merged)
-axes[1].set_title("F1 Scores for MobileViT-s Models (Classes Merged)")
-axes[1].set_xlabel("Model Strategy")
-axes[1].set_xticks(range(1, len(mobilevit_labels) + 1))
-axes[1].set_xticklabels(mobilevit_labels)
-axes[1].set_ylim(y_min_merged, y_max_merged)
-
-for i, mean in enumerate(mobilevit_means_merged):
-    axes[1].text(i + 1, mean, f'{mean:.2f}', ha='center', va='bottom', color='red', fontsize=12)
-
-plt.tight_layout()
-plt.savefig(f"plots/comparative_f1_scores_{average}_boxplot_merged.pdf", format="pdf", bbox_inches="tight")
-plt.show()
-plt.close()
