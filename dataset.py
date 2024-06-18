@@ -218,13 +218,13 @@ class MRIImageDataModule(pl.LightningDataModule):
             test_df, self.slice_number, transform=self.transform, return_id=True
         )
 
-    def train_dataloader(self, sampling_strategy=None, smoothing=0.0, shuffle=True):
+    def train_dataloader(self, sampling_strategy=None, smoothing=0.0, custom_weights=None shuffle=True):
         """    Parameters:
                 - strategy: The strategy for weight computation ('inverse', 'sqrt', 'log', 'exp', 'custom', None) (default: None)
                 - smoothing: A smoothing factor to add to class counts of the sampler to avoid harsh weights (default: 0.0)
         """
         if sampling_strategy is not None:
-            sampler = create_generic_weighted_sampler(self.train_dataset, strategy=sampling_strategy, smoothing=smoothing)
+            sampler = create_generic_weighted_sampler(self.train_dataset, strategy=sampling_strategy, smoothing=smoothing, custom_weights=custom_weights)
             shuffle = False # sampler and shuffle are exclusive. sampler handles shuffling itself
         else:
             sampler = None
