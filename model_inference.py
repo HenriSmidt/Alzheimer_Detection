@@ -17,10 +17,26 @@ csv_path = "Data/metadata_for_preprocessed_files.csv"
 
 # Define the models
 model_configs = {
-    "baseline_models": {
-        "efficientnet-b0": {
-            "model_ckpt": None,
-        },
+    # "baseline_models": {
+    #     "efficientnet-b0": {
+    #         "model_ckpt": None,
+    #     },
+    #     "efficientnet-b2": {
+    #         "model_ckpt": None,
+    #     },
+    #     "mobilevit-s": {
+    #         "model_ckpt": "apple/mobilevit-small",
+    #     },
+    # },
+    # "with_sampler": {
+    #     "efficientnet-b2": {
+    #         "model_ckpt": None,
+    #     },
+    #     "mobilevit-s": {
+    #         "model_ckpt": "apple/mobilevit-small",
+    #     },
+    # },
+    "student_models_with_custom_sampler": {
         "efficientnet-b2": {
             "model_ckpt": None,
         },
@@ -28,22 +44,14 @@ model_configs = {
             "model_ckpt": "apple/mobilevit-small",
         },
     },
-    "with_sampler": {
-        "efficientnet-b2": {
-            "model_ckpt": None,
-        },
-        "mobilevit-s": {
-            "model_ckpt": "apple/mobilevit-small",
-        },
-    },
-    "student_models": {
-        "efficientnet-b2": {
-            "model_ckpt": None,
-        },
-        "mobilevit-s": {
-            "model_ckpt": "apple/mobilevit-small",
-        },
-    },
+    # "with_custom_sampler": {
+        # "efficientnet-b2": {
+        #     "model_ckpt": None,
+        # },
+    #     "mobilevit-s": {
+    #         "model_ckpt": "apple/mobilevit-small",
+    #     },
+    # },
 }
 
 # Define the slice numbers

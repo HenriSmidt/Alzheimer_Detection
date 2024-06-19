@@ -44,10 +44,10 @@ def main():
     device = get_best_device()
 
     # Base directory for model checkpoints
-    base_checkpoint_dir = "model_checkpoints/with_scheduler"
+    base_checkpoint_dir = "model_checkpoints/with_custom_sampler"
     
     # Model configurations
-    model_names = ["efficientnet-b2", "MobileVit"]
+    model_names = ["efficientnet-b2", "mobilevit-s"]
 
     for model_name in model_names:
         checkpoint_dir = os.path.join(base_checkpoint_dir, model_name)
@@ -95,7 +95,7 @@ def main():
             dataloader = data_module.train_dataloader(shuffle=False)
 
             # Output directory for soft labels
-            output_dir = f"soft_labels/{model_name}"
+            output_dir = f"soft_labels/custom_sampler/{model_name}"
             generate_soft_labels(model, dataloader, device, output_dir, slice_number)
 
 if __name__ == "__main__":

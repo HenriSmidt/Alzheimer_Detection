@@ -112,14 +112,14 @@ for category in os.listdir(root_dir):
 # Separate the models
 efficientnet_keys = [
     "baseline_models_efficientnet-b2",
-    "with_sampler_efficientnet-b2",
-    "student_models_efficientnet-b2"
+    "with_custom_sampler_efficientnet-b2",
+    "student_models_with_custom_sampler_efficientnet-b2"
 ]
 
 mobilevit_keys = [
     "baseline_models_mobilevit-s",
-    "with_sampler_mobilevit-s",
-    "student_models_mobilevit-s"
+    "with_custom_sampler_mobilevit-s",
+    "student_models_with_custom_sampler_mobilevit-s"
 ]
 
 # Prepare data for plotting
@@ -174,7 +174,7 @@ for i, mean in enumerate(mobilevit_means):
     axes[1].text(i + 1, mean, f'{mean:.2f}', ha='center', va='bottom', color='red', fontsize=12)
 
 plt.tight_layout()
-plt.savefig(f"plots/comparative_f1_scores_{average}_boxplot.pdf", format="pdf", bbox_inches="tight")
+plt.savefig(f"plots/custom_comparative_f1_scores_{average}_boxplot.pdf", format="pdf", bbox_inches="tight")
 plt.show()
 plt.close()
 
@@ -205,6 +205,6 @@ for i, mean in enumerate(mobilevit_means_merged):
     axes[1].text(i + 1, mean, f'{mean:.2f}', ha='center', va='bottom', color='red', fontsize=12)
 
 plt.tight_layout()
-plt.savefig(f"plots/comparative_f1_scores_{average}_boxplot_merged.pdf", format="pdf", bbox_inches="tight")
+plt.savefig(f"plots/custom_comparative_f1_scores_{average}_boxplot_merged.pdf", format="pdf", bbox_inches="tight")
 plt.show()
 plt.close()
