@@ -9,11 +9,11 @@ from tqdm import tqdm
 from utils import set_plot_style
 
 # Settings for the f1 calculation
-weighted_or_average_f1 = 'weighted'
+weighted_or_average_f1 = 'macro'
 if weighted_or_average_f1 == 'weighted':
     average = 'weighted'
     ylabel = 'Weighted F1 Score'
-elif weighted_or_average_f1 == 'average':
+elif weighted_or_average_f1 == 'macro':
     average = 'macro'
     ylabel = 'Average F1 Score'
 

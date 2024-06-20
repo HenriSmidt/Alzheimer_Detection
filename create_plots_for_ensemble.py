@@ -15,7 +15,7 @@ if weighted_or_average_f1 == 'weighted':
     average = 'weighted'
     ensemble_column_name = 'test_f1_weighted'
     ylabel = 'Weighted F1 Score'
-elif weighted_or_average_f1 == 'average':
+elif weighted_or_average_f1 == 'macro':
     average = 'macro'
     ensemble_column_name = 'test_f1_individual'
     ylabel = 'Average F1 Score'
