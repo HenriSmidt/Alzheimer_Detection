@@ -28,7 +28,7 @@ f1_scores_merged = {}
 f1_scores_single_slice = {}
 f1_scores_single_slice_merged = {}
 
-filtered_file_path = 'filtered_ensemble_results.csv'
+filtered_file_path = 'csvs/filtered_ensemble_results_custom_weights.csv'
 filtered_df = pd.read_csv(filtered_file_path)
 
 
@@ -41,8 +41,8 @@ mobilevit_ensemble_data = [filtered_df[(filtered_df['model_name'] == 'MobileVit-
                            for variant in ['simple', 'medium', 'advanced']]
 
 
-efficientnet_labels = ["Simple", "Medium", "Advanced"]
-mobilevit_labels = ["Simple", "Medium", "Advanced"]
+efficientnet_labels = ["Simple", "Advanced", "Attention"]
+mobilevit_labels = ["Simple", "Advanced", "Attention"]
 
 efficientnet_means = [np.mean(data) for data in efficientnet_ensemble_data]
 mobilevit_means = [np.mean(data) for data in mobilevit_ensemble_data]
