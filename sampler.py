@@ -2,7 +2,10 @@ import numpy as np
 import torch
 from torch.utils.data import WeightedRandomSampler
 
-def create_generic_weighted_sampler(dataset, smoothing=0.0, strategy='inverse', custom_weights=None):
+
+def create_generic_weighted_sampler(
+    dataset, smoothing=0.0, strategy="inverse", custom_weights=None
+):
     """
     Creates a weighted sampler for any dataset.
 
@@ -21,35 +24,49 @@ def create_generic_weighted_sampler(dataset, smoothing=0.0, strategy='inverse', 
     - ValueError: If an unsupported strategy is provided or if custom_weights are not valid.
     """
     # Check if the dataset has the get_labels method
-    if not hasattr(dataset, 'get_labels') or not callable(getattr(dataset, 'get_labels')):
-        raise AttributeError("The dataset object must have a method called 'get_labels' which returns a list or array of labels for each sample in the dataset.")
+    if not hasattr(dataset, "get_labels") or not callable(
+        getattr(dataset, "get_labels")
+    ):
+        raise AttributeError(
+            "The dataset object must have a method called 'get_labels' which returns a list or array of labels for each sample in the dataset."
+        )
 
     labels = dataset.get_labels()
     unique_labels = np.unique(labels)
-    class_sample_count = np.array([len(np.where(np.array(labels) == t)[0]) for t in unique_labels])
+    class_sample_count = np.array(
+        [len(np.where(np.array(labels) == t)[0]) for t in unique_labels]
+    )
 
-    if strategy == 'inverse':
+    if strategy == "inverse":
         weight = 1.0 / (class_sample_count + smoothing)
-    elif strategy == 'sqrt':
+    elif strategy == "sqrt":
         weight = 1.0 / np.sqrt(class_sample_count + smoothing)
-    elif strategy == 'log':
+    elif strategy == "log":
         weight = 1.0 / np.log1p(class_sample_count + smoothing)
-    elif strategy == 'exp':
+    elif strategy == "exp":
         weight = np.exp(-(class_sample_count + smoothing))
-    elif strategy == 'custom':
+    elif strategy == "custom":
         if custom_weights is None:
-            raise ValueError("custom_weights must be provided when strategy is 'custom'.")
+            raise ValueError(
+                "custom_weights must be provided when strategy is 'custom'."
+            )
         if not isinstance(custom_weights, dict):
             raise ValueError("custom_weights must be a dictionary.")
         if len(custom_weights) != len(unique_labels):
-            raise ValueError("Number of custom weights must match the number of unique classes.")
-        
+            raise ValueError(
+                "Number of custom weights must match the number of unique classes."
+            )
+
         weight = np.array([custom_weights[label] for label in unique_labels])
     else:
-        raise ValueError("Unsupported strategy. Choose from 'inverse', 'sqrt', 'log', 'exp', 'custom'.")
+        raise ValueError(
+            "Unsupported strategy. Choose from 'inverse', 'sqrt', 'log', 'exp', 'custom'."
+        )
 
-    samples_weight = np.array([weight[np.where(unique_labels == label)[0][0]] for label in labels])
+    samples_weight = np.array(
+        [weight[np.where(unique_labels == label)[0][0]] for label in labels]
+    )
     samples_weight = torch.from_numpy(samples_weight)
     sampler = WeightedRandomSampler(samples_weight, len(samples_weight))
-    
+
     return sampler

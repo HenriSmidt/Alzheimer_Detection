@@ -21,7 +21,6 @@ set_plot_style()
 #     ylabel = 'Average F1 Score'
 
 
-
 # # Dictionary to store F1 scores
 # f1_scores = {}
 # f1_scores_merged = {}
@@ -33,11 +32,11 @@ set_plot_style()
 
 
 # # Add ensemble results to the data
-# efficientnet_ensemble_data = [filtered_df[(filtered_df['model_name'] == 'efficientnet-b2') & 
-#                                           (filtered_df['ensemble_variant'] == variant)][ensemble_column_name].values 
+# efficientnet_ensemble_data = [filtered_df[(filtered_df['model_name'] == 'efficientnet-b2') &
+#                                           (filtered_df['ensemble_variant'] == variant)][ensemble_column_name].values
 #                               for variant in ['simple', 'medium', 'advanced']]
-# mobilevit_ensemble_data = [filtered_df[(filtered_df['model_name'] == 'MobileVit-s') & 
-#                                        (filtered_df['ensemble_variant'] == variant)][ensemble_column_name].values 
+# mobilevit_ensemble_data = [filtered_df[(filtered_df['model_name'] == 'MobileVit-s') &
+#                                        (filtered_df['ensemble_variant'] == variant)][ensemble_column_name].values
 #                            for variant in ['simple', 'medium', 'advanced']]
 
 
@@ -84,95 +83,143 @@ set_plot_style()
 # plt.close()
 
 
-
-
-
 # Dictionary to store F1 scores
 f1_scores = {}
 f1_scores_merged = {}
 f1_scores_single_slice = {}
 f1_scores_single_slice_merged = {}
 
-filtered_file_path = 'csvs/filtered_ensemble_results_custom_weights.csv'
+filtered_file_path = "csvs/filtered_ensemble_results_custom_weights.csv"
 filtered_df = pd.read_csv(filtered_file_path)
 
 # List of column names representing different classes
-column_names = ['classification_report.0.f1-score', 'classification_report.1.f1-score', 'classification_report.2.f1-score']  # Replace with your actual class column names
-class_labels = ['0', '0.5', '1'] 
+column_names = [
+    "classification_report.0.f1-score",
+    "classification_report.1.f1-score",
+    "classification_report.2.f1-score",
+]  # Replace with your actual class column names
+class_labels = ["0", "0.5", "1"]
 
 efficientnet_labels = ["Simple", "Advanced", "Attention"]
 mobilevit_labels = ["Simple", "Advanced", "Attention"]
 
 # Define ensemble variants
-ensemble_variants = ['simple', 'medium', 'advanced']
+ensemble_variants = ["simple", "medium", "advanced"]
+
 
 # Prepare data
 def prepare_ensemble_data(model_name):
     return {
-        column_name: [filtered_df[(filtered_df['model_name'] == model_name) & 
-                                  (filtered_df['ensemble_variant'] == variant)][column_name].values 
-                      for variant in ensemble_variants]
+        column_name: [
+            filtered_df[
+                (filtered_df["model_name"] == model_name)
+                & (filtered_df["ensemble_variant"] == variant)
+            ][column_name].values
+            for variant in ensemble_variants
+        ]
         for column_name in column_names
     }
 
-efficientnet_data = prepare_ensemble_data('efficientnet-b2')
-mobilevit_data = prepare_ensemble_data('MobileVit-s')
+
+efficientnet_data = prepare_ensemble_data("efficientnet-b2")
+mobilevit_data = prepare_ensemble_data("MobileVit-s")
+
 
 # Plot settings
 def plot_ensemble_data(ax, data, strategy_labels, class_labels, title, ylabel=None):
-    all_f1_scores = [scores for class_scores in data.values() for scores in class_scores]
+    all_f1_scores = [
+        scores for class_scores in data.values() for scores in class_scores
+    ]
     y_min = min([min(scores) for scores in all_f1_scores if len(scores) > 0]) - 0.03
     y_max = max([max(scores) for scores in all_f1_scores if len(scores) > 0]) + 0.03
 
     # Create positions for each class within each strategy
     positions = []
     for i in range(len(ensemble_variants)):
-        positions.extend(range(i * len(class_labels) + 1, (i + 1) * len(class_labels) + 1))
-    
+        positions.extend(
+            range(i * len(class_labels) + 1, (i + 1) * len(class_labels) + 1)
+        )
+
     for idx, (class_name, class_data) in enumerate(data.items()):
         pos_offset = idx
-        class_positions = [positions[i * len(class_labels) + pos_offset] for i in range(len(ensemble_variants))]
-        box = ax.boxplot(class_data, positions=class_positions, widths=0.6, patch_artist=True)
-        for patch in box['boxes']:
-            patch.set_facecolor('lightblue')
+        class_positions = [
+            positions[i * len(class_labels) + pos_offset]
+            for i in range(len(ensemble_variants))
+        ]
+        box = ax.boxplot(
+            class_data, positions=class_positions, widths=0.6, patch_artist=True
+        )
+        for patch in box["boxes"]:
+            patch.set_facecolor("lightblue")
 
         means = [np.mean(d) for d in class_data]
         for i, mean in enumerate(means):
-            ax.text(class_positions[i], mean, f'{mean:.2f}', ha='center', va='bottom', color='red', fontsize=12)
-    
+            ax.text(
+                class_positions[i],
+                mean,
+                f"{mean:.2f}",
+                ha="center",
+                va="bottom",
+                color="red",
+                fontsize=12,
+            )
+
     ax.set_title(title)
     # ax.set_xlabel("Classes per Ensemble Strategy")
     if ylabel is not None:
         ax.set_ylabel(ylabel)
-    
+
     # Set custom xticks for class labels
     ax.set_xticks(positions)
     ax.set_xticklabels(class_labels * len(ensemble_variants))
-    
+
     # Add secondary x-axis for ensemble strategies
-    strategy_positions = [np.mean(positions[i * len(class_labels):(i + 1) * len(class_labels)]) for i in range(len(ensemble_variants))]
-    secax = ax.secondary_xaxis('bottom')
+    strategy_positions = [
+        np.mean(positions[i * len(class_labels) : (i + 1) * len(class_labels)])
+        for i in range(len(ensemble_variants))
+    ]
+    secax = ax.secondary_xaxis("bottom")
     secax.set_xticks(strategy_positions)
     secax.set_xticklabels(strategy_labels)
-    secax.spines['bottom'].set_position(('outward', 20))  # Move the secondary x-axis outward
+    secax.spines["bottom"].set_position(
+        ("outward", 20)
+    )  # Move the secondary x-axis outward
     secax.set_xlabel("CDR per Feature Fusion Strategy")
 
     # Hide the secondary x-axis line and ticks
-    secax.spines['bottom'].set_visible(False)
-    secax.tick_params(axis='x', which='both', length=0)
+    secax.spines["bottom"].set_visible(False)
+    secax.tick_params(axis="x", which="both", length=0)
 
     ax.set_ylim(y_min, y_max)
+
 
 # Create subplots for original classes
 fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(14, 5), sharey=True)
 
 # Plot EfficientNet models
-plot_ensemble_data(axes[0], efficientnet_data, efficientnet_labels, class_labels, "EfficientNet-b2 Feature Fusion Ensembles", ylabel="F1 Score")
+plot_ensemble_data(
+    axes[0],
+    efficientnet_data,
+    efficientnet_labels,
+    class_labels,
+    "EfficientNet-b2 Feature Fusion Ensembles",
+    ylabel="F1 Score",
+)
 
 # Plot MobileViT models
-plot_ensemble_data(axes[1], mobilevit_data, mobilevit_labels, class_labels, "MobileViT-s Feature Fusion Ensembles")
+plot_ensemble_data(
+    axes[1],
+    mobilevit_data,
+    mobilevit_labels,
+    class_labels,
+    "MobileViT-s Feature Fusion Ensembles",
+)
 
 plt.tight_layout()
-plt.savefig(f"plots/detailed_comparative_f1_scores_ensembles_boxplot.pdf", format="pdf", bbox_inches="tight")
+plt.savefig(
+    f"plots/detailed_comparative_f1_scores_ensembles_boxplot.pdf",
+    format="pdf",
+    bbox_inches="tight",
+)
 plt.show()
 plt.close()

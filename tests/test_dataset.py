@@ -112,9 +112,9 @@ class TestMRIDataset(unittest.TestCase):
         train_loader = module.train_dataloader()
         data_iter = iter(train_loader)
         batch = next(data_iter)
-        image = batch['inputs']
-        label = batch['labels']
-        age = batch['age']
+        image = batch["inputs"]
+        label = batch["labels"]
+        age = batch["age"]
         # Assuming image size and check shape (batch size, channels, height, width)
         self.assertEqual(
             image.shape, (1, 3, 224, 224)
@@ -133,13 +133,16 @@ data = pd.DataFrame(
     }
 )
 
+
 # Function to check class distribution
 def check_class_distribution(df, label_col):
     return df[label_col].value_counts(normalize=True)
 
+
 # Function to check ID uniqueness across datasets
 def check_id_uniqueness(train_ids, val_ids, test_ids):
     return len(set(train_ids) & set(val_ids) & set(test_ids)) == 0
+
 
 class TestStratifiedGroupSplit(unittest.TestCase):
     @classmethod

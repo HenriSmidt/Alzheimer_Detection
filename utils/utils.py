@@ -7,7 +7,6 @@ import lightning.pytorch as pl
 import numpy as np
 
 
-
 def get_best_device():
     if torch.cuda.is_available():
         return torch.device("cuda")
@@ -20,7 +19,9 @@ def get_best_device():
 def set_plot_style():
     # Extract the first four colors from the Paired colormap
     paired_colors = plt.cm.Paired(range(10))
-    selected_colors = np.concatenate([paired_colors[:4], paired_colors[6:7], paired_colors[7:8]])
+    selected_colors = np.concatenate(
+        [paired_colors[:4], paired_colors[6:7], paired_colors[7:8]]
+    )
 
     # Set the color cycle with the selected colors
     plt.rc("axes", prop_cycle=(cycler("color", selected_colors)))
@@ -50,7 +51,6 @@ def set_plot_style():
         }
     )
     return selected_colors
-
 
 
 def set_reproducibility(seed=42):

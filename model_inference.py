@@ -45,9 +45,9 @@ model_configs = {
         },
     },
     # "with_custom_sampler": {
-        # "efficientnet-b2": {
-        #     "model_ckpt": None,
-        # },
+    # "efficientnet-b2": {
+    #     "model_ckpt": None,
+    # },
     #     "mobilevit-s": {
     #         "model_ckpt": "apple/mobilevit-small",
     #     },
@@ -57,10 +57,12 @@ model_configs = {
 # Define the slice numbers
 slice_numbers = ["65", "86", "56", "95", "62", "35", "59", "74", "80", "134"]
 
+
 # Function to apply softmax after averaging predictions
 def softmax(x):
     e_x = np.exp(x - np.max(x))
     return e_x / e_x.sum(axis=-1, keepdims=True)
+
 
 # Function to run inference
 def run_inference_and_save_predictions(model_configs, device, csv_path, runs=10):
@@ -68,22 +70,28 @@ def run_inference_and_save_predictions(model_configs, device, csv_path, runs=10)
         for model_name, config in models.items():
             model_ckpt = config["model_ckpt"]
             transform = get_transform(model_name, model_ckpt)
-            
+
             for run in range(runs):
                 results_dict = {"id": [], "labels": []}
-                model_predictions = {f"slice_{slice_number}": [] for slice_number in slice_numbers}
+                model_predictions = {
+                    f"slice_{slice_number}": [] for slice_number in slice_numbers
+                }
 
                 for slice_number in slice_numbers:
                     # Find the correct model checkpoint path
                     folder_path = f"model_checkpoints/{category}/{model_name}/"
                     model_path = None
                     for filename in os.listdir(folder_path):
-                        if filename.startswith(f"slice_number_{slice_number}") and filename.endswith(".ckpt"):
+                        if filename.startswith(
+                            f"slice_number_{slice_number}"
+                        ) and filename.endswith(".ckpt"):
                             model_path = os.path.join(folder_path, filename)
                             break
 
                     if not model_path:
-                        print(f'The checkpoint path for slice {slice_number} does not exist in {folder_path}')
+                        print(
+                            f"The checkpoint path for slice {slice_number} does not exist in {folder_path}"
+                        )
                         continue
 
                     # Load the model
@@ -116,7 +124,10 @@ def run_inference_and_save_predictions(model_configs, device, csv_path, runs=10)
                     all_ids = []
 
                     with torch.no_grad():
-                        for batch in tqdm(test_loader, desc=f"Inference {category}/{model_name} slice {slice_number} run {run+1}/{runs}"):
+                        for batch in tqdm(
+                            test_loader,
+                            desc=f"Inference {category}/{model_name} slice {slice_number} run {run+1}/{runs}",
+                        ):
                             inputs = batch["inputs"]
                             labels = batch["labels"]
                             ids = batch["id"]
@@ -133,7 +144,9 @@ def run_inference_and_save_predictions(model_configs, device, csv_path, runs=10)
                         results_dict["labels"] = all_labels
 
                 # Aggregate and average predictions
-                combined_predictions = np.zeros_like(model_predictions[f"slice_{slice_numbers[0]}"])
+                combined_predictions = np.zeros_like(
+                    model_predictions[f"slice_{slice_numbers[0]}"]
+                )
                 for slice_number in slice_numbers:
                     slice_preds = np.array(model_predictions[f"slice_{slice_number}"])
                     combined_predictions += slice_preds
@@ -155,9 +168,12 @@ def run_inference_and_save_predictions(model_configs, device, csv_path, runs=10)
                 os.makedirs(output_folder, exist_ok=True)
 
                 # Save DataFrame to CSV
-                df_results.to_csv(f"{output_folder}/run_{run}_predictions.csv", index=False)
+                df_results.to_csv(
+                    f"{output_folder}/run_{run}_predictions.csv", index=False
+                )
 
                 # Display DataFrame
                 print(df_results.head())
+
 
 run_inference_and_save_predictions(model_configs, device, csv_path)

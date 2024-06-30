@@ -9,6 +9,7 @@ import tempfile
 import os
 from dataset import MRIFeatureDataset, MRIFeatureDataModule
 
+
 class TestMRIFeatureDataset(unittest.TestCase):
     def setUp(self):
         # Create a temporary directory
@@ -16,16 +17,16 @@ class TestMRIFeatureDataset(unittest.TestCase):
 
         # Sample data
         self.data = {
-            'slice_0': [np.random.rand(5) for _ in range(10)],
-            'slice_1': [np.random.rand(5) for _ in range(10)],
-            'slice_2': [np.random.rand(5) for _ in range(10)],
-            'label': np.random.randint(0, 2, size=10)
+            "slice_0": [np.random.rand(5) for _ in range(10)],
+            "slice_1": [np.random.rand(5) for _ in range(10)],
+            "slice_2": [np.random.rand(5) for _ in range(10)],
+            "label": np.random.randint(0, 2, size=10),
         }
         self.df = pd.DataFrame(self.data)
 
         # Save the data to a pickle file
-        self.pickle_file = os.path.join(self.temp_dir.name, 'sample_data.pkl')
-        with open(self.pickle_file, 'wb') as f:
+        self.pickle_file = os.path.join(self.temp_dir.name, "sample_data.pkl")
+        with open(self.pickle_file, "wb") as f:
             pickle.dump(self.df, f)
 
     def tearDown(self):
@@ -38,7 +39,9 @@ class TestMRIFeatureDataset(unittest.TestCase):
 
     def test_feature_columns_identification(self):
         dataset = MRIFeatureDataset(self.pickle_file, as_sequence=True)
-        expected_columns = sorted([col for col in self.df.columns if col.startswith('slice_')])
+        expected_columns = sorted(
+            [col for col in self.df.columns if col.startswith("slice_")]
+        )
         self.assertEqual(dataset.feature_columns, expected_columns)
 
     def test_sequence_and_feature_length_calculation(self):
@@ -65,16 +68,16 @@ class TestMRIFeatureDataset(unittest.TestCase):
         self.assertEqual(label.shape, torch.Size([]))
         self.assertIsInstance(features, torch.Tensor)
         self.assertIsInstance(label, torch.Tensor)
-        
+
     def test_batch_loading_as_sequence(self):
         batch_size = 4
         data_module = MRIFeatureDataModule(
-            train_pkl=self.pickle_file, 
-            val_pkl=self.pickle_file, 
-            test_pkl=self.pickle_file, 
-            as_sequence=True, 
-            batch_size=batch_size, 
-            num_workers=0
+            train_pkl=self.pickle_file,
+            val_pkl=self.pickle_file,
+            test_pkl=self.pickle_file,
+            as_sequence=True,
+            batch_size=batch_size,
+            num_workers=0,
         )
         data_module.setup()
 
@@ -90,12 +93,12 @@ class TestMRIFeatureDataset(unittest.TestCase):
     def test_batch_loading_not_as_sequence(self):
         batch_size = 4
         data_module = MRIFeatureDataModule(
-            train_pkl=self.pickle_file, 
-            val_pkl=self.pickle_file, 
-            test_pkl=self.pickle_file, 
-            as_sequence=False, 
-            batch_size=batch_size, 
-            num_workers=0
+            train_pkl=self.pickle_file,
+            val_pkl=self.pickle_file,
+            test_pkl=self.pickle_file,
+            as_sequence=False,
+            batch_size=batch_size,
+            num_workers=0,
         )
         data_module.setup()
 
@@ -108,5 +111,6 @@ class TestMRIFeatureDataset(unittest.TestCase):
         self.assertIsInstance(features, torch.Tensor)
         self.assertIsInstance(labels, torch.Tensor)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

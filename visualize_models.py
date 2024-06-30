@@ -5,12 +5,14 @@ import pytorch_lightning as pl
 from torchmetrics.functional import accuracy
 from models import SimpleEnsembleModel, MediumEnsembleModel, AdvancedEnsembleModel
 
+
 def visualize_model(model, input_size):
     # Create a batch with more than one sample
     x = torch.randn(2, *input_size)
     y = model(x)
     graph = make_dot(y, params=dict(model.named_parameters()))
     return graph
+
 
 feature_size = 160
 num_classes = 4
