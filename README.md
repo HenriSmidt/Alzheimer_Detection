@@ -26,11 +26,39 @@ Alzheimer's Disease is characterized by the accumulation of amyloid plaques and 
 The dataset used in this project is the OASIS-1 (Open Access Series of Imaging Studies) dataset, which includes MRI scans from a cross-sectional collection of 416 subjects aged 18 to 96. The dataset includes both healthy individuals and patients diagnosed with Alzheimer's Disease, providing a comprehensive set of images for training and evaluating the model.
 
 - **Source**: [OASIS-1](https://www.oasis-brains.org/)
-- **Data Preprocessing**: The MRI scans are preprocessed to standardize the images, including resizing, normalization, and augmentation to increase the robustness of the model.
+
+**Data Imbalance**: The dataset exhibits a significant class imbalance with the majority being non-demented. To address this, various sampling strategies and custom weights were employed to balance the training data.
+
+**Correlation Analysis**: Dementia levels were correlated with age, education, and socioeconomic status, revealing moderate to slight correlations.
+
+**Data Preparation**: MRI scans were divided into 176 horizontal slices, grouped into three-channel images to retain 3D structure. These groups were used to train individual models, with the top-performing slices selected for further analysis.
+
 
 ## Methodology
+This section outlines the methodologies employed in this study, addressing the challenges posed by the dataset and detailing the methods used to achieve the research objectives.
+### Concept Overview
 
-...
+Two model architectures, EfficientNet-B2 and MobileVit-S, were selected for their compact size and performance. Initial models established a baseline, followed by combining predictions from different slice group models to enhance classification accuracy. Improvements focused on handling data imbalance and refining training labels using self-distilled soft labels.
+
+### Handling Data Imbalance
+
+Various sampling strategies were tested to address data imbalance, including custom weights calculated using different formulas. A custom sampling method generated and evaluated random weights to find an optimal balance for model training.
+
+### Self-Distillation
+
+Self-distilled soft labels were used to refine training, creating smoother targets for the model and enhancing generalization. This involved transforming logits with a log-softmax function and optimizing parameters like learning rate and self-distillation alpha.
+
+### Prediction Fusion
+
+Predictions from ten models, each trained on a different top-performing slice group, were averaged to leverage comprehensive spatial information and improve classification robustness.
+
+### Feature Fusion
+
+Feature maps from the ten models were combined using different ensemble strategies, including simple concatenation, advanced feature fusion with fully connected layers, and attention feature fusion with multi-head attention mechanisms.
+
+### Implementation Details
+
+Patient-wise data splitting was performed to ensure the integrity of patient data, with 75% for training, 12.5% for validation, and 12.5% for testing. Experiments were conducted using an Apple M3 chip with 18 GB of RAM.
 
 ## Model Architecture
 
