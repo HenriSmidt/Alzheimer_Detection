@@ -60,13 +60,55 @@ Feature maps from the ten models were combined using different ensemble strategi
 
 Patient-wise data splitting was performed to ensure the integrity of patient data, with 75% for training, 12.5% for validation, and 12.5% for testing. Experiments were conducted using an Apple M3 chip with 18 GB of RAM.
 
-## Model Architecture
-
-...
 
 ## Results
 
-...
+In this section, we present the results obtained from applying the methods described in the previous chapter. We evaluated all strategies using the EfficientNet-B2 and MobileViT-S models.
+
+### Sampling Strategies Comparison
+
+We identified the top ten performing slice groups from the initial slice group evaluation. These groups are centered around slices 65, 86, 56, 95, 62, 35, 59, 74, 80, and 134, as shown below:
+
+![Best Performing Slice Groups](plots/f1_score_per_slice.pdf)
+*Figure: The best performing slice groups are around the middle of the MRI scan.*
+
+### Sampling Strategies Performance
+
+The performance of various sampling strategies was measured using macro F1 scores for both models. The results are as follows:
+
+| Sampling Strategy | EfficientNet-B2 | MobileViT-S |
+|-------------------|-----------------|-------------|
+| Custom            | 0.59            | 0.62        |
+| Log               | 0.48            | 0.51        |
+| Sqrt              | 0.47            | 0.45        |
+| Inverse           | 0.44            | 0.52        |
+
+### Sampling Strategy, Self Distillation, and Prediction Fusion
+
+We adapted models using sampling and self-distillation techniques, evaluating them with averaged predictions from ten models to ensure reliability. The average F1 scores across different experiments are illustrated below:
+
+![F1 Score Variability](plots/custom_comparative_f1_scores_macro_boxplot.pdf)
+*Figure: The effect of different strategies on F1 score for CDR 0.5 and CDR 1.*
+
+![Detailed F1 Score Distribution](plots/detailed_custom_comparative_f1_scores_boxplot.pdf)
+*Figure: Detailed F1 scores for CDR 0.5 and CDR 1.*
+
+For both models, the Mild Dementia class remained challenging, with significant performance improvements observed when aggregating predictions from multiple slices. Custom sampling weights notably increased the mean F1 score for the EfficientNet-based model by 0.15, while self-distillation decreased it.
+
+### Feature Fusion Ensembles
+
+We evaluated feature fusion ensembles for both models, with the best results obtained using the self-distilled model with a custom sampler. The macro F1 scores for different ensemble strategies are summarized below:
+
+![Macro F1 Scores for Ensembles](plots/comparative_f1_scores_macro_of_ensembles_boxplot.pdf)
+*Figure: Comparison of F1 scores for different feature fusion strategies.*
+
+For EfficientNet-B2, the Attention model achieved the highest F1 score for Very Mild Dementia. For MobileViT-S, the Advanced model significantly improved the F1 score for Mild Dementia, as detailed below:
+
+![Detailed Ensemble F1 Scores](plots/detailed_comparative_f1_scores_ensembles_boxplot.pdf)
+*Figure: Detailed F1 scores for feature fusion ensembles.*
+
+These results highlight the potential of ensemble strategies and custom sampling techniques in improving model performance for dementia classification tasks.
+
 
 ## Installation
 
