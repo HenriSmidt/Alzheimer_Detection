@@ -99,12 +99,12 @@ For both models, the Mild Dementia class remained challenging, with significant 
 
 We evaluated feature fusion ensembles for both models, with the best results obtained using the self-distilled model with a custom sampler. The macro F1 scores for different ensemble strategies are summarized below:
 
-![Macro F1 Scores for Ensembles](plots/comparative_f1_scores_macro_of_ensembles_boxplot.pdf)
+![Macro F1 Scores for Ensembles](plots_used/comparative_f1_scores_macro_of_ensembles_boxplot.pdf)
 *Figure: Comparison of F1 scores for different feature fusion strategies.*
 
 For EfficientNet-B2, the Attention model achieved the highest F1 score for Very Mild Dementia. For MobileViT-S, the Advanced model significantly improved the F1 score for Mild Dementia, as detailed below:
 
-![Detailed Ensemble F1 Scores](plots/detailed_comparative_f1_scores_ensembles_boxplot.pdf)
+![Detailed Ensemble F1 Scores](plots_used/detailed_comparative_f1_scores_ensembles_boxplot.pdf)
 *Figure: Detailed F1 scores for feature fusion ensembles.*
 
 These results highlight the potential of ensemble strategies and custom sampling techniques in improving model performance for dementia classification tasks.
